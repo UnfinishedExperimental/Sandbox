@@ -1,32 +1,24 @@
 package de.dheinrich.sandbox;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
 
-import darwin.core.gui.Client;
-import darwin.core.gui.ClientWindow;
+import darwin.core.gui.*;
 import darwin.geometrie.data.*;
 import darwin.renderer.GraphicContext;
 import darwin.renderer.geometrie.packed.RenderMesh;
 import darwin.renderer.geometrie.packed.RenderMesh.RenderMeshFactory;
+import darwin.renderer.opengl.FrameBuffer.*;
 import darwin.renderer.opengl.*;
 import darwin.renderer.opengl.VertexBO.VBOFactoy;
-import darwin.renderer.shader.Shader;
-import darwin.renderer.shader.Shader.ShaderFactory;
-import darwin.renderer.shader.ShaderUniform;
-import darwin.resourcehandling.ResourceChangeListener;
-import darwin.resourcehandling.core.ResourceHandle;
-import darwin.resourcehandling.handle.ClasspathFileHandler;
-import darwin.resourcehandling.handle.ClasspathFileHandler.FileHandlerFactory;
-import darwin.resourcehandling.io.ShaderFile;
-import darwin.resourcehandling.io.ShaderUtil;
-import darwin.resourcehandling.resmanagment.ResourcesLoader;
+import darwin.renderer.shader.*;
+import darwin.resourcehandling.io.TextureUtil;
+import darwin.resourcehandling.resmanagment.ShaderLoader;
+import darwin.resourcehandling.resmanagment.texture.ShaderDescription;
+import darwin.util.misc.SaveClosable;
 
 import com.google.inject.*;
-import com.jogamp.newt.event.MouseAdapter;
-import com.jogamp.newt.event.MouseEvent;
+import com.jogamp.newt.event.*;
+import com.jogamp.opengl.util.texture.Texture;
 import javax.media.opengl.*;
 
 /**
@@ -38,32 +30,39 @@ public class App implements GLEventListener {
     private final Client client;
     private final VBOFactoy vboFactory;
     private final RenderMeshFactory meshFactory;
-    private RenderMesh mesh;
-    private int x, y, w, h;
-    private ShaderUniform lightPos;
-    private Shader shader;
-    @Inject
-    private ShaderUtil util;
-    @Inject
-    private ShaderFactory sFactory;
+    private final ShaderLoader sLoader;
     @Inject
     private GraphicContext gcontext;
     @Inject
-    private FileHandlerFactory fileFactory;
-    private ClasspathFileHandler vertex;
-    private ClasspathFileHandler fragment;
+    private GLClientConstants constants;
+    //
+    private RenderMesh drawMesh, processMesh;
+    private int x, y, w, h;
+    private Sampler drawSampler, prossSampler;
+    private Shader simple, processing;
+    @Inject
+    @Default
+    private FrameBufferObject DEFAULT;
+    private FrameBufferObject particleData;
+    private int accBuffer;
+    private boolean initialized = false;
 
     @Inject
-    public App(Client client, VBOFactoy vboFactory,
-               RenderMeshFactory meshFactory) {
+    public App(Client client, VBOFactoy vboFactory, RenderMeshFactory meshFactory, ShaderLoader sLoader) {
         this.client = client;
         this.vboFactory = vboFactory;
         this.meshFactory = meshFactory;
+        this.sLoader = sLoader;
     }
 
     public static void main(String[] args) throws InstantiationException {
-
-        Stage stage = Arrays.binarySearch(args, "-devmode") < 0 ? Stage.DEVELOPMENT : Stage.PRODUCTION;
+        Stage stage = Stage.PRODUCTION;
+        for (String arg : args) {
+            if (arg.equals("-devmode")) {
+                stage = Stage.DEVELOPMENT;
+                break;
+            }
+        }
         Injector inj = Guice.createInjector(stage, Client.getRequiredModules());
         App a = inj.getInstance(App.class);
         a.start();
@@ -84,8 +83,20 @@ public class App implements GLEventListener {
     @Override
     public void init(GLAutoDrawable glad) {
         glad.setGL(new DebugGL2(glad.getGL().getGL2()));
-
         GL2ES2 gl = glad.getGL().getGL2();
+
+        particleData = new FrameBufferObject(gcontext, constants);
+        TextureUtil util = new TextureUtil(gcontext);
+        Texture data1 = util.newTexture(GL2.GL_RGB16, 128, 128, 0, GL.GL_RGB, GL.GL_SHORT, false);
+        Texture data2 = util.newTexture(GL2.GL_RGB16, 128, 128, 0, GL.GL_RGB, GL.GL_SHORT, false);
+
+        try (SaveClosable sc = particleData.use()) {
+            particleData.setColor_Attachment(0, data1);
+            particleData.setColor_Attachment(1, data2);
+            System.out.println(particleData.getStatusString());
+        };
+        
+//        DEFAULT.bind();
 
         Element position = new Element(GLSLType.VEC2, "Position");
         DataLayout layout = new DataLayout(position);
@@ -98,62 +109,24 @@ public class App implements GLEventListener {
 
         VertexBO vbo = vboFactory.create(vb);
 
-        //        util.setResourceLoader(new ResourceProvider() {
-        //            @Override
-        //            public InputStream getRessource(String name) throws IOException {
-        //                return fileFactory.create(Paths.get(name)).getStream();
-        //            }
-        //        });
-        Path base = Paths.get("src/main/resources");
-        fragment = fileFactory.create(base.resolve("resources/shaders/simple.frag"));
-        vertex = fileFactory.create(base.resolve("resources/shaders/simple.vert"));
-
-        fragment.registerChangeListener(shaderUpdater);
-        vertex.registerChangeListener(shaderUpdater);
-
-        shaderUpdater.resourceChanged(null);
-
-        lightPos = shader.getUniform("lightPos").get();
-
-        mesh = meshFactory.create(shader, GL.GL_TRIANGLE_STRIP, null, vbo);
+        try {
+            simple = sLoader.loadShader(new ShaderDescription("simple", false));
+            drawSampler = simple.getSampler("data").get();
+            processing = sLoader.loadShader(new ShaderDescription("processing.frag", "simple.vert", null));
+            this.prossSampler = processing.getSampler("data").get();
+            drawMesh = meshFactory.create(simple, GL.GL_TRIANGLE_STRIP, null, vbo);
+            processMesh = meshFactory.create(processing, GL.GL_TRIANGLE_STRIP, null, vbo);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 
         // Enable VSync
         gl.setSwapInterval(1);
 
         gl.glClearColor(0, 110, 0, 0);
 
-        gl.glEnable(GL.GL_BLEND);
+        initialized = true;
     }
-    private final ResourceChangeListener shaderUpdater = new ResourceChangeListener() {
-        @Override
-        public void resourceChanged(ResourceHandle handle) {
-            try {
-                final ShaderFile loadShader = ShaderFile.Builder.create("simple").
-                        withFragment(util.getData(fragment.getStream())).
-                        withVertex(util.getData(vertex.getStream())).
-                        create();
-
-                if (shader == null) {
-                    shader = sFactory.create(loadShader);
-                }
-
-                gcontext.getGLWindow().invoke(false, new GLRunnable() {
-                    @Override
-                    public boolean run(GLAutoDrawable glad) {
-                        try {
-                            ShaderProgramm compileShader = util.compileShader(loadShader);
-                            shader.ini(compileShader);
-                        } catch (Throwable t) {
-                            System.out.println(t);
-                        }
-                        return true;
-                    }
-                });
-            } catch (IOException ex) {
-                System.out.println(ex.getMessage());
-            }
-        }
-    };
 
     @Override
     public void dispose(GLAutoDrawable glad) {
@@ -161,15 +134,30 @@ public class App implements GLEventListener {
 
     @Override
     public void display(GLAutoDrawable glad) {
+        if (!initialized) {
+            return;
+        }
+
         GL2ES2 gl = glad.getGL().getGL2();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
-        if (shader != null && shader.isInitialized()) {
-            lightPos.setData(getNormalized(x, w), getNormalized(h - y, h), 3);
-            shader.updateUniformData();
-            if (mesh != null) {
-                mesh.render();
-            }
-        }
+
+//        int readBuffer = accBuffer;
+//        accBuffer = (accBuffer + 1) % 2;
+//        int drawBuffer = accBuffer;
+
+        try (SaveClosable closable = particleData.use()) {
+//            gl.glClear(GL.GL_COLOR_BUFFER_BIT);
+            processing.bind();
+//            data2.bindTexture(particleData.getColorAttachmentTexture(readBuffer));
+//            gl.getGL2GL3().glDrawBuffer(GL.GL_COLOR_ATTACHMENT0 + drawBuffer);
+            processMesh.render();
+        particleData.copyColorTo(DEFAULT);
+        };
+        
+
+//        simple.bind();
+//        drawSampler.bindTexture(particleData.getColorAttachmentTexture(0));
+//        drawMesh.render();
     }
 
     private float getNormalized(float v, float m) {
