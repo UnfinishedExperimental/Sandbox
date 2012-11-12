@@ -7,7 +7,12 @@ in vec2 texcoord;
 uniform sampler2D data;
 
 void main()
-{
-    vec2 pos = texcoord * 2. - 1.;
-    FragColor = vec4(Unpack3PNFromFP32(texture(data, texcoord).x), 0);
+{   
+    vec4 data = texture(data, texcoord);
+
+    vec3 pos = data.xyz;
+    float life = data.a;
+
+
+    FragColor = vec4(life, pos);
 }

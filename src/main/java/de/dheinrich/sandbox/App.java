@@ -2,6 +2,8 @@ package de.dheinrich.sandbox;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import darwin.core.gui.*;
 import darwin.core.timing.GameTime;
@@ -21,9 +23,10 @@ import darwin.resourcehandling.resmanagment.ShaderLoader;
 import darwin.resourcehandling.resmanagment.texture.ShaderDescription;
 import darwin.util.misc.SaveClosable;
 
+import com.google.common.base.Optional;
 import com.google.inject.*;
 import com.jogamp.newt.event.*;
-import com.jogamp.opengl.util.texture.Texture;
+import com.jogamp.opengl.util.texture.*;
 import javax.media.opengl.*;
 
 /**
@@ -55,6 +58,9 @@ public class App implements GLEventListener {
     private boolean initialized = false;
     private final GameTime time = new GameTime();
     private FrameBufferObject spawner;
+    private Shader particleShader;
+    private RenderMesh particleMesh;
+    private Sampler particleSampler;
 
     @Inject
     public App(Client client, VBOFactoy vboFactory, RenderMeshFactory meshFactory, ShaderLoader sLoader) {
@@ -93,18 +99,17 @@ public class App implements GLEventListener {
     public void init(GLAutoDrawable glad) {
         glad.setGL(new DebugGL2(glad.getGL().getGL2()));
         GL2ES2 gl = glad.getGL().getGL2();
-        System.out.println(gl);
+        System.out.println(glad.getContext().getGLExtensionsString());
 
-
-        particleData = new FrameBufferObject(gcontext, constants);
         TextureUtil util = new TextureUtil(gcontext);
-        int width = 512;
+        int width = 1024;
         int height = width;
-        Texture data1 = util.newTexture(GL2.GL_RGBA32F, width, height, 0, GL.GL_RGBA, GL.GL_FLOAT, false);
+        Texture data1 = util.newTexture(GL2ES2.GL_RGBA8, width, height, 0, GL2ES2.GL_RGBA, GL.GL_UNSIGNED_BYTE, false);
         util.setTexturePara(data1, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
-        Texture data2 = util.newTexture(GL2.GL_RGBA32F, width, height, 0, GL.GL_RGBA, GL.GL_FLOAT, false);
+        Texture data2 = util.newTexture(GL2ES2.GL_RGBA8, width, height, 0, GL2ES2.GL_RGBA, GL.GL_UNSIGNED_BYTE, false);
         util.setTexturePara(data2, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
 
+        particleData = new FrameBufferObject(gcontext, constants);
         try (SaveClosable sc = particleData.use()) {
             particleData.setColor_Attachment(0, data1);
             particleData.setColor_Attachment(1, data2);
@@ -115,16 +120,33 @@ public class App implements GLEventListener {
             System.out.println(particleData.getStatusString());
         };
 
-        spawner = new FrameBufferObject(gcontext, constants);
-        try (SaveClosable sc = spawner.use()) {
-            Texture d = util.newTexture(GL2.GL_RGBA32F, width, height, 0, GL.GL_RGBA, GL.GL_FLOAT, false);
-            util.setTexturePara(d, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
-            spawner.setColor_Attachment(0, d);
-            particleData.setColor_Attachment(1, data2);
-            System.out.println(particleData.getStatusString());
-        };
+//        spawner = new FrameBufferObject(gcontext, constants);
+//        try (SaveClosable sc = spawner.use()) {
+//            Texture d = util.newTexture(GL2.GL_RGBA32F, width, height, 0, GL.GL_RGBA, GL.GL_FLOAT, false);
+//            util.setTexturePara(d, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
+//            spawner.setColor_Attachment(0, d);
+//            particleData.setColor_Attachment(1, data2);
+//            System.out.println(particleData.getStatusString());
+//        };
+        //        DEFAULT.bind();
 
-//        DEFAULT.bind();
+
+        Element idElement = new Element(GLSLType.VEC2, "lookup");
+        VertexBuffer a = new VertexBuffer(idElement, width * height);
+        float halfTexel = 0.5f/width;
+        for (int i = 0; i < a.getSize(); i++) {
+            a.newVertex().setAttribute(idElement, (float)(i%width) / width + halfTexel,
+                                                  (float)(i/width) / width + halfTexel);
+        }
+        VertexBO particleBuffer = vboFactory.create(a);
+
+        try {
+            particleShader = sLoader.loadShader(new ShaderDescription("particle", false));
+            particleSampler = particleShader.getSampler("data").get();
+        } catch (IOException ex) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        particleMesh = meshFactory.create(particleShader, GL.GL_POINTS, null, particleBuffer);
 
         ScreenQuad quad = new ScreenQuad(meshFactory, vboFactory);
 
@@ -139,7 +161,7 @@ public class App implements GLEventListener {
         }
 
         // Enable VSync
-        gl.setSwapInterval(1);
+//        gl.setSwapInterval(1);
 
         gl.glDisable(GL.GL_DEPTH_TEST);
         gl.glDisable(GL.GL_CULL_FACE);
@@ -158,10 +180,10 @@ public class App implements GLEventListener {
         }
 
         long elepsed = time.update();
-//        System.out.println((float) TimeUnit.SECONDS.toNanos(1) / elepsed);
+        System.out.println((float) TimeUnit.SECONDS.toNanos(1) / elepsed);
 
         GL2ES2 gl = glad.getGL().getGL2();
-        gl.glClearColor(0, 110, 0, 0);
+        gl.glClearColor(0, 0, 0, 0);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
 
         int readBuffer = accBuffer;
@@ -176,9 +198,9 @@ public class App implements GLEventListener {
             mesh.render();
         };
 
-        simple.bind();
-        drawSampler.bindTexture(particleData.getColorAttachmentTexture(drawBuffer));
-        mesh.render();
+        particleShader.bind();
+        particleSampler.bindTexture(particleData.getColorAttachmentTexture(drawBuffer));
+        particleMesh.render();
     }
 
     private float getNormalized(float v, float m) {
@@ -189,5 +211,46 @@ public class App implements GLEventListener {
     public void reshape(GLAutoDrawable glad, int i, int i1, int width, int height) {
         w = width;
         h = height;
+    }
+
+    public static float Pack3PNForFP32(float[] channel) {
+        // layout of a 32-bit fp register
+        // SEEEEEEEEMMMMMMMMMMMMMMMMMMMMMMM
+        // 1 sign bit; 8 bits for the exponent and 23 bits for the mantissa
+        int uValue;
+
+        // pack x
+        uValue = (int) (channel[0] * 65535.0 + 0.5); // goes from bit 0 to 15
+
+        // pack y in EMMMMMMM
+        uValue |= (int) (channel[1] * 255.0 + 0.5) << 16;
+
+        // pack z in SEEEEEEE
+        // the last E will never be 1 because the upper value is 254
+        // max value is 11111110 == 254
+        // this prevents the bits of the exponents to become all 1
+        // range is 1.. 254
+        // to prevent an exponent that is 0 we add 1.0
+        uValue |= (int) (channel[2] * 253.0 + 1.5) << 24;
+
+        return Float.intBitsToFloat(uValue);
+    }
+
+    public static float[] Unpack3PNFromFP32(float fFloatFromFP32) {
+        float a, b, c;
+
+        int uInputFloat = Float.floatToIntBits(fFloatFromFP32);
+
+        // unpack a
+        // mask out all the stuff above 16-bit with 0xFFFF
+        a = (uInputFloat & 0xFFFF) / 65535.f;
+
+        b = ((uInputFloat >> 16) & 0xFF) / 255.f;
+
+        // extract the 1..254 value range and subtract 1
+        // ending up with 0..253
+        c = (((uInputFloat >> 24) & 0xFF) - 1) / 253.f;
+
+        return new float[]{a, b, c};
     }
 }

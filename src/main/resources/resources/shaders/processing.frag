@@ -8,9 +8,22 @@ uniform sampler2D data;
 
 void main()
 {
-    vec3 color = Unpack3PNFromFP32(texture(data, texcoord).x) + 0.01;
-    if(color.x > 1)
-        color = vec3(1);
+    vec4 data = texture(data, texcoord);
+
+    vec3 pos = data.xyz*2-1;
+    float life = data.a;
+   
+    life -= 0.005;
+
+    vec2 dir = pos.yx;
+    dir = normalize(dir) * 0.04;
+    dir.y *= -1.;
+    pos.xy += dir;
+
+    if(life < 0.){
+        pos = vec3(rand(texcoord), rand(texcoord.ts), 0)*2-1;
+        life = 1;
+    }
   
-    FragColor = vec4(Pack3PNForFP32(color), vec3(0));
+    FragColor = vec4(pos*0.5+0.5, life);
 }
