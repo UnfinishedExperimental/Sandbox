@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import darwin.core.gui.*;
 import darwin.core.timing.GameTime;
 import darwin.geometrie.data.*;
+import darwin.renderer.BasicScene;
 import darwin.renderer.GraphicContext;
 import darwin.renderer.geometrie.factorys.ScreenQuad;
 import darwin.renderer.geometrie.packed.RenderMesh;
@@ -21,6 +22,11 @@ import darwin.renderer.util.FboUtil;
 import darwin.resourcehandling.io.TextureUtil;
 import darwin.resourcehandling.resmanagment.ShaderLoader;
 import darwin.resourcehandling.resmanagment.texture.ShaderDescription;
+import darwin.util.math.composits.ProjectionMatrix;
+import darwin.util.math.composits.ViewMatrix;
+import darwin.util.math.util.MatType;
+import darwin.util.math.util.MatrixCache;
+import darwin.util.math.util.MatrixEvent;
 import darwin.util.misc.SaveClosable;
 
 import com.google.common.base.Optional;
@@ -46,21 +52,26 @@ public class App implements GLEventListener {
     //
     private RenderMesh mesh;
     private int x, y, w, h;
-    private Sampler drawSampler, prossSampler;
-    private Shader simple, processing;
+    private boolean initialized = false;
+    private final GameTime time = new GameTime();
     @Inject
     private RenderBufferFactory factory;
     @Inject
     @Default
     private FrameBufferObject DEFAULT;
-    private FrameBufferObject particleData;
-    private int accBuffer;
-    private boolean initialized = false;
-    private final GameTime time = new GameTime();
-    private FrameBufferObject spawner;
-    private Shader particleShader;
-    private RenderMesh particleMesh;
-    private Sampler particleSampler;
+    //<editor-fold defaultstate="collapsed" desc="particle">
+    //    private Sampler drawSampler, prossSampler;
+    //    private Shader simple, processing;
+    //    private FrameBufferObject particleData;
+    //    private int accBuffer;
+    //    private FrameBufferObject spawner;
+    //    private Shader particleShader;
+    //    private RenderMesh particleMesh;
+    //    private Sampler particleSampler;
+    //</editor-fold>
+    private MatrixCache matrices;
+    private Shader shader;
+    private ViewMatrix view;
 
     @Inject
     public App(Client client, VBOFactoy vboFactory, RenderMeshFactory meshFactory, ShaderLoader sLoader) {
@@ -101,68 +112,90 @@ public class App implements GLEventListener {
         GL2ES2 gl = glad.getGL().getGL2();
         System.out.println(glad.getContext().getGLExtensionsString());
 
-        TextureUtil util = new TextureUtil(gcontext);
-        int width = 1024;
-        int height = width;
-        Texture data1 = util.newTexture(GL2ES2.GL_RGBA8, width, height, 0, GL2ES2.GL_RGBA, GL.GL_UNSIGNED_BYTE, false);
-        util.setTexturePara(data1, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
-        Texture data2 = util.newTexture(GL2ES2.GL_RGBA8, width, height, 0, GL2ES2.GL_RGBA, GL.GL_UNSIGNED_BYTE, false);
-        util.setTexturePara(data2, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
+        //<editor-fold defaultstate="collapsed" desc="Particle experiment">
+        //TextureUtil util = new TextureUtil(gcontext);
+        //        int width = 1024;
+        //        int height = width;
+        //        Texture data1 = util.newTexture(GL2ES2.GL_RGBA8, width, height, 0, GL2ES2.GL_RGBA, GL.GL_UNSIGNED_BYTE, false);
+        //        util.setTexturePara(data1, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
+        //        Texture data2 = util.newTexture(GL2ES2.GL_RGBA8, width, height, 0, GL2ES2.GL_RGBA, GL.GL_UNSIGNED_BYTE, false);
+        //        util.setTexturePara(data2, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
+        //
+        //        particleData = new FrameBufferObject(gcontext, constants);
+        //        try (SaveClosable sc = particleData.use()) {
+        //            particleData.setColor_Attachment(0, data1);
+        //            particleData.setColor_Attachment(1, data2);
+        //            gl.getGL2GL3().glDrawBuffers(2, new int[]{GL.GL_COLOR_ATTACHMENT0, GL.GL_COLOR_ATTACHMENT0 + 1}, 0);
+        //            gl.glClearColor(0, 0.f, 0, 0);
+        ////            gl.glClearColor(0, 0.33f, 1, 0);
+        //            gl.glClear(GL.GL_COLOR_BUFFER_BIT);
+        //            System.out.println(particleData.getStatusString());
+        //        };
 
-        particleData = new FrameBufferObject(gcontext, constants);
-        try (SaveClosable sc = particleData.use()) {
-            particleData.setColor_Attachment(0, data1);
-            particleData.setColor_Attachment(1, data2);
-            gl.getGL2GL3().glDrawBuffers(2, new int[]{GL.GL_COLOR_ATTACHMENT0, GL.GL_COLOR_ATTACHMENT0 + 1}, 0);
-            gl.glClearColor(0, 0.f, 0, 0);
-//            gl.glClearColor(0, 0.33f, 1, 0);
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT);
-            System.out.println(particleData.getStatusString());
-        };
-
-//        spawner = new FrameBufferObject(gcontext, constants);
-//        try (SaveClosable sc = spawner.use()) {
-//            Texture d = util.newTexture(GL2.GL_RGBA32F, width, height, 0, GL.GL_RGBA, GL.GL_FLOAT, false);
-//            util.setTexturePara(d, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
-//            spawner.setColor_Attachment(0, d);
-//            particleData.setColor_Attachment(1, data2);
-//            System.out.println(particleData.getStatusString());
-//        };
+        //        spawner = new FrameBufferObject(gcontext, constants);
+        //        try (SaveClosable sc = spawner.use()) {
+        //            Texture d = util.newTexture(GL2.GL_RGBA32F, width, height, 0, GL.GL_RGBA, GL.GL_FLOAT, false);
+        //            util.setTexturePara(d, GL.GL_NEAREST, GL.GL_CLAMP_TO_EDGE);
+        //            spawner.setColor_Attachment(0, d);
+        //            particleData.setColor_Attachment(1, data2);
+        //            System.out.println(particleData.getStatusString());
+        //        };
         //        DEFAULT.bind();
 
 
-        Element idElement = new Element(GLSLType.VEC2, "lookup");
-        VertexBuffer a = new VertexBuffer(idElement, width * height);
-        float halfTexel = 0.5f/width;
-        for (int i = 0; i < a.getSize(); i++) {
-            a.newVertex().setAttribute(idElement, (float)(i%width) / width + halfTexel,
-                                                  (float)(i/width) / width + halfTexel);
-        }
-        VertexBO particleBuffer = vboFactory.create(a);
+        //        Element idElement = new Element(GLSLType.VEC2, "lookup");
+        //        VertexBuffer a = new VertexBuffer(idElement, width * height);
+        //        float halfTexel = 0.5f/width;
+        //        for (int i = 0; i < a.getSize(); i++) {
+        //            a.newVertex().setAttribute(idElement, (float)(i%width) / width + halfTexel,
+        //                                                  (float)(i/width) / width + halfTexel);
+        //        }
+        //        VertexBO particleBuffer = vboFactory.create(a);
+        //
+        //        try {
+        //            particleShader = sLoader.loadShader(new ShaderDescription("particle", false));
+        //            particleSampler = particleShader.getSampler("data").get();
+        //        } catch (IOException ex) {
+        //            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        //        }
+        //        particleMesh = meshFactory.create(particleShader, GL.GL_POINTS, null, particleBuffer);
+        //
+        //        ScreenQuad quad = new ScreenQuad(meshFactory, vboFactory);
+        //
+        //        try {
+        //            simple = sLoader.loadShader(new ShaderDescription("simple", false));
+        //            processing = sLoader.loadShader(new ShaderDescription("processing.frag", "simple.vert", null));
+        //            drawSampler = simple.getSampler("data").get();
+        //            prossSampler = processing.getSampler("data").get();
+        //            mesh = quad.buildRenderable(simple);
+        //        } catch (IOException ex) {
+        //            ex.printStackTrace();
+        //        }
+        //</editor-fold>
+
+        SphereGenerator gen = new SphereGenerator(200);
+        VertexBO s = vboFactory.create(gen.getVertexBuffer());
+
+        matrices = new MatrixCache();
+        
+        
+        view = new ViewMatrix();
+        view.loadIdentity();
 
         try {
-            particleShader = sLoader.loadShader(new ShaderDescription("particle", false));
-            particleSampler = particleShader.getSampler("data").get();
-        } catch (IOException ex) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        particleMesh = meshFactory.create(particleShader, GL.GL_POINTS, null, particleBuffer);
-
-        ScreenQuad quad = new ScreenQuad(meshFactory, vboFactory);
-
-        try {
-            simple = sLoader.loadShader(new ShaderDescription("simple", false));
-            processing = sLoader.loadShader(new ShaderDescription("processing.frag", "simple.vert", null));
-            drawSampler = simple.getSampler("data").get();
-            prossSampler = processing.getSampler("data").get();
-            mesh = quad.buildRenderable(simple);
+            shader = sLoader.loadShader(new ShaderDescription("sphere", false));
+            matrices.addListener(shader);
+            mesh = meshFactory.create(shader, GL.GL_POINTS, null, s);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
 
         // Enable VSync
 //        gl.setSwapInterval(1);
-
+        gl.glEnable(GL.GL_BLEND);
+        gl.glBlendEquation(gl.GL_FUNC_ADD);
+        gl.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
+       
         gl.glDisable(GL.GL_DEPTH_TEST);
         gl.glDisable(GL.GL_CULL_FACE);
 
@@ -180,27 +213,39 @@ public class App implements GLEventListener {
         }
 
         long elepsed = time.update();
-        System.out.println((float) TimeUnit.SECONDS.toNanos(1) / elepsed);
+        float eInSeconds = (float) elepsed / TimeUnit.SECONDS.toNanos(1);
+//        System.out.println(1f / eInSeconds);
 
         GL2ES2 gl = glad.getGL().getGL2();
         gl.glClearColor(0, 0, 0, 0);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
 
-        int readBuffer = accBuffer;
-        accBuffer = (accBuffer + 1) % 2;
-        int drawBuffer = accBuffer;
+        if (mesh != null) {
+            view.rotateEuler(0, 30 * eInSeconds, 0);
+            view.rotateEuler(15 * eInSeconds, 0, 0);
+            matrices.setView(view.clone().translate(0, 0, 5).inverse());
 
-        try (SaveClosable closable = particleData.use()) {
-            gl.glClearColor(110, 0, 0, 0);
-            processing.bind();
-            prossSampler.bindTexture(particleData.getColorAttachmentTexture(readBuffer));
-            gl.getGL2GL3().glDrawBuffer(GL.GL_COLOR_ATTACHMENT0 + drawBuffer);
+            shader.updateUniformData();
             mesh.render();
-        };
+        }
 
-        particleShader.bind();
-        particleSampler.bindTexture(particleData.getColorAttachmentTexture(drawBuffer));
-        particleMesh.render();
+        //<editor-fold defaultstate="collapsed" desc="particle stuff">
+        //        int readBuffer = accBuffer;
+        //        accBuffer = (accBuffer + 1) % 2;
+        //        int drawBuffer = accBuffer;
+        //
+        //        try (SaveClosable closable = particleData.use()) {
+        //            gl.glClearColor(110, 0, 0, 0);
+        //            processing.bind();
+        //            prossSampler.bindTexture(particleData.getColorAttachmentTexture(readBuffer));
+        //            gl.getGL2GL3().glDrawBuffer(GL.GL_COLOR_ATTACHMENT0 + drawBuffer);
+        //            mesh.render();
+        //        };
+        //
+        //        particleShader.bind();
+        //        particleSampler.bindTexture(particleData.getColorAttachmentTexture(drawBuffer));
+        //        particleMesh.render();
+        //</editor-fold>
     }
 
     private float getNormalized(float v, float m) {
@@ -211,6 +256,9 @@ public class App implements GLEventListener {
     public void reshape(GLAutoDrawable glad, int i, int i1, int width, int height) {
         w = width;
         h = height;
+        float ratio = (float) width / Math.max(1, height);
+        matrices.getProjektion().perspective(50, ratio, 0.001, 1000);
+        matrices.fireChange(MatType.PROJECTION);
     }
 
     public static float Pack3PNForFP32(float[] channel) {
