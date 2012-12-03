@@ -2,37 +2,37 @@ package de.dheinrich.sandbox;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import darwin.core.gui.*;
+import darwin.core.gui.Client;
+import darwin.core.gui.ClientWindow;
 import darwin.core.timing.GameTime;
-import darwin.geometrie.data.*;
-import darwin.renderer.BasicScene;
 import darwin.renderer.GraphicContext;
-import darwin.renderer.geometrie.factorys.ScreenQuad;
 import darwin.renderer.geometrie.packed.RenderMesh;
 import darwin.renderer.geometrie.packed.RenderMesh.RenderMeshFactory;
-import darwin.renderer.opengl.FrameBuffer.*;
-import darwin.renderer.opengl.*;
+import darwin.renderer.opengl.FrameBuffer.Default;
+import darwin.renderer.opengl.FrameBuffer.FrameBufferObject;
 import darwin.renderer.opengl.FrameBuffer.RenderBuffer.RenderBufferFactory;
+import darwin.renderer.opengl.GLClientConstants;
+import darwin.renderer.opengl.VertexBO;
 import darwin.renderer.opengl.VertexBO.VBOFactoy;
-import darwin.renderer.shader.*;
-import darwin.renderer.util.FboUtil;
-import darwin.resourcehandling.io.TextureUtil;
+import darwin.renderer.shader.Shader;
+import darwin.renderer.shader.ShaderUniform;
+import darwin.resourcehandling.UsedResourceProcessor;
+import darwin.resourcehandling.dependencies.annotation.InjectBundle;
+import darwin.resourcehandling.factory.ResourceFactory;
+import darwin.resourcehandling.factory.ResourceWrapper;
+import darwin.resourcehandling.handle.ResourceBundle;
 import darwin.resourcehandling.resmanagment.ShaderLoader;
+import darwin.resourcehandling.resmanagment.ShaderLoader.ShaderLoaderFactory;
 import darwin.resourcehandling.resmanagment.texture.ShaderDescription;
-import darwin.util.math.composits.ProjectionMatrix;
 import darwin.util.math.composits.ViewMatrix;
 import darwin.util.math.util.MatType;
 import darwin.util.math.util.MatrixCache;
-import darwin.util.math.util.MatrixEvent;
-import darwin.util.misc.SaveClosable;
 
 import com.google.common.base.Optional;
 import com.google.inject.*;
-import com.jogamp.newt.event.*;
-import com.jogamp.opengl.util.texture.*;
+import com.jogamp.newt.event.MouseAdapter;
+import com.jogamp.newt.event.MouseEvent;
 import javax.media.opengl.*;
 
 /**
@@ -44,21 +44,15 @@ public class App implements GLEventListener {
     private final Client client;
     private final VBOFactoy vboFactory;
     private final RenderMeshFactory meshFactory;
-    private final ShaderLoader sLoader;
+    @InjectBundle(value = "sphere.frag,sphere.vert", prefix = "resources/shaders/")
+    private ResourceBundle sphereSource;
     @Inject
-    private GraphicContext gcontext;
-    @Inject
-    private GLClientConstants constants;
+    private ShaderLoaderFactory loaderFactory;
     //
     private RenderMesh mesh;
     private int x, y, w, h;
     private boolean initialized = false;
     private final GameTime time = new GameTime();
-    @Inject
-    private RenderBufferFactory factory;
-    @Inject
-    @Default
-    private FrameBufferObject DEFAULT;
     //<editor-fold defaultstate="collapsed" desc="particle">
     //    private Sampler drawSampler, prossSampler;
     //    private Shader simple, processing;
@@ -70,15 +64,15 @@ public class App implements GLEventListener {
     //    private Sampler particleSampler;
     //</editor-fold>
     private MatrixCache matrices;
-    private Shader shader;
+    private ResourceWrapper<Shader> shader;
     private ViewMatrix view;
+    private Optional<ShaderUniform> timeUniform = Optional.absent();
 
     @Inject
-    public App(Client client, VBOFactoy vboFactory, RenderMeshFactory meshFactory, ShaderLoader sLoader) {
+    public App(Client client, VBOFactoy vboFactory, RenderMeshFactory meshFactory) {
         this.client = client;
         this.vboFactory = vboFactory;
         this.meshFactory = meshFactory;
-        this.sLoader = sLoader;
     }
 
     public static void main(String[] args) throws InstantiationException {
@@ -177,25 +171,24 @@ public class App implements GLEventListener {
         VertexBO s = vboFactory.create(gen.getVertexBuffer());
 
         matrices = new MatrixCache();
-        
-        
+
+
         view = new ViewMatrix();
         view.loadIdentity();
 
-        try {
-            shader = sLoader.loadShader(new ShaderDescription("sphere", false));
-            matrices.addListener(shader);
-            mesh = meshFactory.create(shader, GL.GL_POINTS, null, s);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        ResourceFactory fac = new ResourceFactory();
+
+        shader = fac.createResource(loaderFactory.create(), sphereSource);
+        timeUniform = shader.get().getUniform("time");
+        matrices.addListener(shader.get());
+        mesh = meshFactory.create(shader.get(), GL.GL_POINTS, null, s);
 
         // Enable VSync
 //        gl.setSwapInterval(1);
         gl.glEnable(GL.GL_BLEND);
         gl.glBlendEquation(gl.GL_FUNC_ADD);
         gl.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
-       
+
         gl.glDisable(GL.GL_DEPTH_TEST);
         gl.glDisable(GL.GL_CULL_FACE);
 
@@ -214,6 +207,9 @@ public class App implements GLEventListener {
 
         long elepsed = time.update();
         float eInSeconds = (float) elepsed / TimeUnit.SECONDS.toNanos(1);
+        if (timeUniform.isPresent()) {
+            timeUniform.get().setData((float) time.getElapsedTime());
+        }
 //        System.out.println(1f / eInSeconds);
 
         GL2ES2 gl = glad.getGL().getGL2();
@@ -225,7 +221,7 @@ public class App implements GLEventListener {
             view.rotateEuler(15 * eInSeconds, 0, 0);
             matrices.setView(view.clone().translate(0, 0, 5).inverse());
 
-            shader.updateUniformData();
+            shader.get().updateUniformData();
             mesh.render();
         }
 

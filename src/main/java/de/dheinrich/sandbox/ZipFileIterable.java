@@ -20,6 +20,7 @@ public class ZipFileIterable extends ZipFile implements Iterable<ZipEntry> {
         super(file);
     }
 
+    @Override
     public Iterator<ZipEntry> iterator() {
         return new Iterator<ZipEntry>() {
             Enumeration<? extends ZipEntry> e = entries();

@@ -1,7 +1,8 @@
 #version 120
 #pragma include includes/StdLib.frag
+#pragma include includes/gamma.h
 
 void main()
 {   
-    FragColor = vec4(0.1);
+    FragColor = toGamma(vec4(0.1));
 }
