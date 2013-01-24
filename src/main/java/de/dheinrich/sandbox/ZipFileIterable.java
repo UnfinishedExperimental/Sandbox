@@ -25,14 +25,17 @@ public class ZipFileIterable extends ZipFile implements Iterable<ZipEntry> {
         return new Iterator<ZipEntry>() {
             Enumeration<? extends ZipEntry> e = entries();
 
+            @Override
             public boolean hasNext() {
                 return e.hasMoreElements();
             }
 
+            @Override
             public ZipEntry next() {
                 return e.nextElement();
             }
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
