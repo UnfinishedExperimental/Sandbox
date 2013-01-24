@@ -4,5 +4,5 @@
 
 void main()
 {   
-    FragColor = toGamma(vec4(0.1));
+    FragColor = toGamma(vec4(1));
 }

@@ -1,53 +1,39 @@
 package de.dheinrich.sandbox;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import darwin.core.gui.Client;
-import darwin.core.gui.ClientWindow;
+import darwin.core.gui.*;
 import darwin.core.timing.GameTime;
-import darwin.renderer.GraphicContext;
 import darwin.renderer.geometrie.packed.RenderMesh;
 import darwin.renderer.geometrie.packed.RenderMesh.RenderMeshFactory;
-import darwin.renderer.opengl.FrameBuffer.Default;
-import darwin.renderer.opengl.FrameBuffer.FrameBufferObject;
-import darwin.renderer.opengl.FrameBuffer.RenderBuffer.RenderBufferFactory;
-import darwin.renderer.opengl.GLClientConstants;
 import darwin.renderer.opengl.VertexBO;
 import darwin.renderer.opengl.VertexBO.VBOFactoy;
-import darwin.renderer.shader.Shader;
-import darwin.renderer.shader.ShaderUniform;
-import darwin.resourcehandling.UsedResourceProcessor;
-import darwin.resourcehandling.dependencies.annotation.InjectBundle;
-import darwin.resourcehandling.factory.ResourceFactory;
-import darwin.resourcehandling.factory.ResourceWrapper;
-import darwin.resourcehandling.handle.ResourceBundle;
-import darwin.resourcehandling.resmanagment.ShaderLoader;
-import darwin.resourcehandling.resmanagment.ShaderLoader.ShaderLoaderFactory;
-import darwin.resourcehandling.resmanagment.texture.ShaderDescription;
+import darwin.renderer.shader.*;
+import darwin.resourcehandling.dependencies.annotation.*;
+import darwin.resourcehandling.shader.ShaderLoader;
+import darwin.resourcehandling.texture.TextureLoader;
 import darwin.util.math.composits.ViewMatrix;
-import darwin.util.math.util.MatType;
-import darwin.util.math.util.MatrixCache;
+import darwin.util.math.util.*;
 
 import com.google.common.base.Optional;
-import com.google.inject.*;
-import com.jogamp.newt.event.MouseAdapter;
-import com.jogamp.newt.event.MouseEvent;
+import com.jogamp.newt.event.*;
+import com.jogamp.opengl.util.texture.Texture;
+import javax.inject.Inject;
 import javax.media.opengl.*;
 
 /**
  * Hello world!
  *
  */
-public class App implements GLEventListener {
+public class App extends MouseAdapter implements GLEventListener {
 
-    private final Client client;
     private final VBOFactoy vboFactory;
     private final RenderMeshFactory meshFactory;
-    @InjectBundle(value = "sphere.frag,sphere.vert", prefix = "resources/shaders/")
-    private ResourceBundle sphereSource;
-    @Inject
-    private ShaderLoaderFactory loaderFactory;
+    //
+    @InjectBundle(files = {"sphere.frag", "sphere.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
+    private Shader sphereShader;
+    @InjectResource(file = TextureLoader.TEXTURE_PATH_PREFIX + "screen.png")
+    private Texture fireTexture;
     //
     private RenderMesh mesh;
     private int x, y, w, h;
@@ -64,47 +50,40 @@ public class App implements GLEventListener {
     //    private Sampler particleSampler;
     //</editor-fold>
     private MatrixCache matrices;
-    private ResourceWrapper<Shader> shader;
     private ViewMatrix view;
     private Optional<ShaderUniform> timeUniform = Optional.absent();
 
     @Inject
-    public App(Client client, VBOFactoy vboFactory, RenderMeshFactory meshFactory) {
-        this.client = client;
+    public App(VBOFactoy vboFactory, RenderMeshFactory meshFactory) {
         this.vboFactory = vboFactory;
         this.meshFactory = meshFactory;
     }
 
     public static void main(String[] args) throws InstantiationException {
-        Stage stage = Stage.PRODUCTION;
-        for (String arg : args) {
-            if (arg.equals("-devmode")) {
-                stage = Stage.DEVELOPMENT;
-                break;
-            }
-        }
-        Injector inj = Guice.createInjector(stage, Client.getRequiredModules());
-        App a = inj.getInstance(App.class);
-        a.start();
+        boolean debug = true;
+
+        Client client = Client.createClient(debug);
+
+        ClientWindow window = new ClientWindow(500, 500, false, client);
+        window.startUp();
+
+        App a = client.addGLEventListener(App.class);
+        
+        client.addMouseListener(a);
     }
 
-    public void start() throws InstantiationException {
-        client.addGLEventListener(this);
-        ClientWindow window = new ClientWindow(500, 500, false, client);
-        window.startUp().addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent me) {
-                x = me.getX();
-                y = me.getY();
-            }
-        });
+    @Override
+    public void mouseMoved(MouseEvent me) {
+        
+        System.out.println(fireTexture.getHeight());
+        x = me.getX();
+        y = me.getY();
     }
 
     @Override
     public void init(GLAutoDrawable glad) {
         glad.setGL(new DebugGL2(glad.getGL().getGL2()));
         GL2ES2 gl = glad.getGL().getGL2();
-        System.out.println(glad.getContext().getGLExtensionsString());
 
         //<editor-fold defaultstate="collapsed" desc="Particle experiment">
         //TextureUtil util = new TextureUtil(gcontext);
@@ -167,25 +146,17 @@ public class App implements GLEventListener {
         //        }
         //</editor-fold>
 
-        SphereGenerator gen = new SphereGenerator(200);
-        VertexBO s = vboFactory.create(gen.getVertexBuffer());
-
         matrices = new MatrixCache();
-
 
         view = new ViewMatrix();
         view.loadIdentity();
 
-        ResourceFactory fac = new ResourceFactory();
-
-        shader = fac.createResource(loaderFactory.create(), sphereSource);
-        timeUniform = shader.get().getUniform("time");
-        matrices.addListener(shader.get());
-        mesh = meshFactory.create(shader.get(), GL.GL_POINTS, null, s);
+        timeUniform = sphereShader.getUniform("time");
+        matrices.addListener(sphereShader);
 
         // Enable VSync
 //        gl.setSwapInterval(1);
-        gl.glEnable(GL.GL_BLEND);
+//        gl.glEnable(GL.GL_BLEND);
         gl.glBlendEquation(gl.GL_FUNC_ADD);
         gl.glBlendFunc(GL.GL_ONE, GL.GL_ONE);
 
@@ -216,12 +187,17 @@ public class App implements GLEventListener {
         gl.glClearColor(0, 0, 0, 0);
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
 
-        if (mesh != null) {
+        if (sphereShader.isInitialized()) {
+            if (mesh == null) {
+                SphereGenerator gen = new SphereGenerator(200);
+                VertexBO s = vboFactory.create(gen.getVertexBuffer());
+                mesh = meshFactory.create(sphereShader, GL.GL_POINTS, null, s);
+            }
             view.rotateEuler(0, 30 * eInSeconds, 0);
             view.rotateEuler(15 * eInSeconds, 0, 0);
             matrices.setView(view.clone().translate(0, 0, 5).inverse());
 
-            shader.get().updateUniformData();
+            sphereShader.updateUniformData();
             mesh.render();
         }
 

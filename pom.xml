@@ -34,6 +34,17 @@
                         <configuration>
                             <processors>
                                 <processor>darwin.annotations.ServiceProcessor</processor>
+                            </processors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>processResources</id>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <processors>
                                 <processor>darwin.resourcehandling.UsedResourceProcessor</processor>
                             </processors>
                         </configuration>
@@ -74,29 +85,29 @@
             <version>1.7.2</version>
         </dependency>
         <dependency>
-            <groupId>jcifs</groupId>
-            <artifactId>jcifs</artifactId>
-            <version>1.3.17</version>
+            <groupId>com.github.danny02</groupId>
+            <artifactId>AutoAtlas</artifactId>
+            <version>1.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.lwjgl.lwjgl</groupId>
-            <artifactId>lwjgl_util</artifactId>
-            <version>2.8.4</version>
+            <groupId>com.github.danny02.darwin</groupId>
+            <artifactId>Renderer</artifactId>
+            <version>2.2-SNAPSHOT</version>
+            <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>org.lwjgl.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <version>2.8.4</version>
-        </dependency>
-        <dependency>
-            <groupId>asm</groupId>
-            <artifactId>asm-all</artifactId>
-            <version>3.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.darwinsbox</groupId>
+            <groupId>com.github.danny02.darwin</groupId>
             <artifactId>Core</artifactId>
-            <version>2.0-SNAPSHOT</version>
+            <version>2.2-SNAPSHOT</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
+
+
+    <repositories>
+        <repository>
+            <id>Ardor3D</id>
+            <url>http://ardor3d.com:8081/nexus/content/groups/public/</url>
+        </repository>
+    </repositories>
 </project>

@@ -25,10 +25,7 @@ void main()
 
     float dist = 1 - abs(p.y - (t - 0.5)*2);
     //p *= 1 + sin(phi*(20*t+2))*0.1;//+ pow(dist,5)*0.3;
-    p.y += sin(p.y*10+time*5)*0.3;
-    p.x += sin(p.x*8+time)*0.3;
-
-    //p.z -= 3;
-    gl_Position =  projection * view * vec4(p*1.5, 1.);
-
+    //p.y += sin(p.y*10+time*5)*0.3;
+    //p.x += sin(p.x*8+time)*0.3;
+    gl_Position =  projection * vec4(p, 1.);
 }

@@ -4,15 +4,13 @@
  */
 package de.dheinrich.sandbox;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
 
 import darwin.renderer.shader.CompiledShader;
 
