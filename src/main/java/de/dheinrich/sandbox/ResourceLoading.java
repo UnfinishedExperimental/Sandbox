@@ -6,14 +6,13 @@ package de.dheinrich.sandbox;
 
 import darwin.core.gui.*;
 import darwin.core.timing.*;
-import darwin.geometrie.unpacked.Model;
+import darwin.geometrie.unpacked.*;
 import darwin.renderer.geometrie.packed.RenderModel;
 import darwin.renderer.geometrie.packed.RenderModel.RenderModelFactory;
 import darwin.renderer.shader.*;
 import darwin.resourcehandling.dependencies.annotation.*;
 import darwin.resourcehandling.shader.ShaderLoader;
 import darwin.util.math.base.Quaternion;
-import darwin.util.math.base.matrix.Matrix4;
 import darwin.util.math.base.vector.*;
 import darwin.util.math.composits.AABB;
 import darwin.util.math.util.*;
@@ -29,13 +28,16 @@ import javax.media.opengl.*;
  */
 public class ResourceLoading implements GLEventListener {
 
+    @InjectBundle(files = {"sphere.frag", "sphere.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
+    private Shader sphereS;
     @InjectBundle(files = {"simple.frag", "simple.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
     private Shader shader;
     @InjectResource(file = "sp.ctm")
+    //    @InjectResource(file = "women.obj")
     private Model[] test;
     @Inject
     private RenderModelFactory modeler;
-    private RenderModel model;
+    private RenderModel model, sphere;
     private MatrixCache cache = new MatrixCache();
     private GameTime time = new GameTime();
 
@@ -47,48 +49,57 @@ public class ResourceLoading implements GLEventListener {
         window.startUp();
 
         ResourceLoading a = client.addGLEventListener(ResourceLoading.class);
+//        client.addMouseListener(new MouseAdapter() {
+//            @Override
+//            public void mouseMoved(MouseEvent me) {
+//                float lerp = me.getX() / 500f;
+//                q.setAxisAngle(new Vector3(0, 1, 0), 360 * lerp);
+//            }
+//        });
     }
 
     @Override
     public void init(GLAutoDrawable glad) {
+        glad.setGL(new DebugGL4(glad.getGL().getGL4()));
+
         cache.addListener(shader);
+        cache.addListener(sphereS);
 
         cache.getView().loadIdentity();
-        cache.getView().translate(0, 0, 5).inverse();
-        cache.getView().lookAt(new Vector3(2, 4, 5),
-                               new Vector3(0),
-                               new Vector3(0, 1, 0));
+        cache.getView().translate(0, 0, 5);
+//        cache.getView().rotateEuler(-10, 0, 0);
+        cache.getView().inverse();
         cache.fireChange(MatType.VIEW);
 
-        GL gl = glad.getGL();
+        GL2GL3 gl = glad.getGL().getGL2GL3();
+        gl.glClearColor(0.3f, 0.3f, 0.3f, 1);
+        gl.glDisable(GL.GL_BLEND);
+        gl.glEnable(GL.GL_DEPTH_TEST);
+        gl.glFrontFace(GL.GL_CCW);
+//        gl.glEnable(GL.GL_CULL_FACE);
+        gl.glPolygonMode(GL.GL_BACK, GL2.GL_LINE);
 
-        time.addListener(1, new StepListener() {
-            int frames;
-
-            @Override
-            public void update(int tickCount, float lerp, float tickTimeSpan) {
-                frames++;
-                if (tickCount > 0) {
-                    System.out.println(frames);
-                    frames = 0;
-                }
-            }
-        });
+//        time.addListener(1, new StepListener() {
+//            int frames;
+//
+//            @Override
+//            public void update(int tickCount, float lerp, float tickTimeSpan) {
+//                frames++;
+//                if (tickCount > 0) {
+//                    System.out.println(frames);
+//                    frames = 0;
+//                }
+//            }
+//        });
 
         time.addListener(new DeltaListener() {
-            Quaternion r, q = new Quaternion();
-
-            {
-                r = new Quaternion();
-                r.setAxisAngle(new Vector3(0, 1, 0), 520);
-            }
+            final Quaternion q = new Quaternion();
             float time = 0;
 
             @Override
             public void update(double timeDelta) {
                 time += timeDelta;
-                q = r.getInterpolated((time/5) %1);
-
+                q.setAxisAngle(new Vector3(0, 1, 0), 720 * ((time / 10) % 1));
                 Quaternion[] dual = q.toDualQuaternion(new Vector3());
                 Optional<ShaderUniform> un1 = shader.getUniform("dual1");
                 un1.get().setData(dual[0].toArray());
@@ -99,20 +110,15 @@ public class ResourceLoading implements GLEventListener {
     }
 
     @Override
-    public void dispose(GLAutoDrawable glad) {
-    }
-
-    @Override
     public void display(GLAutoDrawable glad) {
         time.update();
-        glad.getGL().glClear(GL.GL_COLOR_BUFFER_BIT);
+        glad.getGL().glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
         if (shader.isInitialized()) {
             if (model == null) {
                 model = modeler.create(test[0], shader);
                 AABB a = MeshUtil.calcAABB(test[0].getMesh().getVertices());
                 System.out.println(a);
-                System.out.println(cache.getViewProjection().fastMult(new Vector3(9, -8, 90)));
                 for (Vector3 v : a.getCorners()) {
                     GenericVector gv = new GenericVector(v.x, v.y, v.z, 1);
                     Vector mult = cache.getViewProjection().mult(gv);
@@ -121,14 +127,30 @@ public class ResourceLoading implements GLEventListener {
                 }
             }
             shader.updateUniformData();
-            model.render();
+//            model.render();
+
+        }
+        if (sphereS.isInitialized()) {
+            if (sphere == null) {
+                SphereGenerator gen = new SphereGenerator(10);
+                Model m = new Model(new Mesh(gen.getIndices(), gen.getVertexBuffer(), GL.GL_TRIANGLES), null);
+                AABB a = MeshUtil.calcAABB(m.getMesh().getVertices());
+                System.out.println(a);
+                sphere = modeler.create(m, sphereS);
+            }
+            sphereS.updateUniformData();
+            sphere.render();
         }
     }
 
     @Override
     public void reshape(GLAutoDrawable glad, int x, int y, int width, int height) {
-        final float ratio = (float) height / Math.min(1, width);
-        cache.getProjektion().ortho(-10, -10, -100, 10, 10, 100);//perspective(50, ratio, 0.001, 1000);
+        final float ratio = (float) width / Math.max(1, height);
+        cache.getProjektion().perspective(60, ratio, 0.1, 1000);//ortho(-10, -10, 0.1, 10, 10, 100);//
         cache.fireChange(MatType.PROJECTION);
+    }
+    
+    @Override
+    public void dispose(GLAutoDrawable glad) {
     }
 }

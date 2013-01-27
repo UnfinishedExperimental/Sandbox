@@ -85,11 +85,6 @@
             <version>1.7.2</version>
         </dependency>
         <dependency>
-            <groupId>com.github.danny02</groupId>
-            <artifactId>AutoAtlas</artifactId>
-            <version>1.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.danny02.darwin</groupId>
             <artifactId>Renderer</artifactId>
             <version>2.2-SNAPSHOT</version>

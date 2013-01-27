@@ -4,39 +4,31 @@
  */
 package de.dheinrich.sandbox;
 
+import darwin.util.math.base.vector.ImmutableVector;
+import darwin.util.math.base.vector.Vector3;
+
 /**
  *
  * @author Daniel Heinrich <dannynullzwo@gmail.com>
  */
 public class Test {
 
-    private static class A {
+    public final ImmutableVector<Vector3> a;
 
-        static {
-            System.out.println("static init of A");
-        }
-
-        {
-            System.out.println("init of A");
-        }
-
-        public A() {
-            System.out.println("constructor of A");
-        }
+    public Test(ImmutableVector<Vector3> a) {
+        this.a = a;
     }
 
-    private static class B extends A {
+    @Override
+    public String toString() {
+        return a.toString();
+    }
 
-        static {
-            System.out.println("static init of B");
-        }
-
-        {
-            System.out.println("init of B");
-        }
-
-        public B() {
-            System.out.println("constructor of B");
-        }
+    public static void main(String[] args) {
+        Vector3 vector3 = new Vector3(1, 2, 3);
+        Test test = new Test(vector3);
+        System.out.println(test);
+        vector3.add(3);
+        System.out.println(test);
     }
 }

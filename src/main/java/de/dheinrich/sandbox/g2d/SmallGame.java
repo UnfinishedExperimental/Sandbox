@@ -9,10 +9,8 @@ import java.awt.image.*;
 
 import darwin.core.timing.*;
 import darwin.resourcehandling.dependencies.*;
-import darwin.resourcehandling.dependencies.annotation.InjectResource;
 
 import com.google.inject.Guice;
-import de.darwin.autoatlas.TextureAtlasElement;
 import javax.inject.Inject;
 import javax.swing.JFrame;
 
@@ -24,16 +22,16 @@ public class SmallGame extends JFrame {
 
     private static class Ball {
 
-        @InjectResource(file = "resources/textures/pea.png")
-        private TextureAtlasElement normal;
-        @InjectResource(file = "resources/textures/peaglow.png")
-        private TextureAtlasElement glow;
+//        @InjectResource(file = "resources/textures/pea.png")
+//        private TextureAtlasElement normal;
+//        @InjectResource(file = "resources/textures/peaglow.png")
+//        private TextureAtlasElement glow;
         
         private int x, y;
         private boolean isGlowing;
 
         public void draw(Graphics2D g) {
-            g.drawImage(isGlowing ? glow.getSubImage() : normal.getSubImage(), x, y, null);
+//            g.drawImage(isGlowing ? glow.getSubImage() : normal.getSubImage(), x, y, null);
         }
     }
     private final Ball ball;
