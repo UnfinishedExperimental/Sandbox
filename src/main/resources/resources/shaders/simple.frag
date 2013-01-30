@@ -5,33 +5,55 @@
 
 in vec3 normal;  
 in vec3 eye;
-in float zlerp;
 
-const vec3 L = vec3(0.12708472893924555, -2.5399460893115735, 2.8320502943377743);
+const vec3 COLOR1 = RGBColor(255, 184, 107);
+const vec3 COLOR2 = RGBColor(107, 159, 255);
 
-const vec3 COLOR1 = RGBColor(255, 184, 107) * 0.5;
-const vec3 COLOR2 = RGBColor(107, 159, 255) * 0.5;
+const vec3 specColor = vec3(0.0225);
+const float gloss = 0.9;
+const float SpecularPower = exp2(10 * gloss + 1);
+const float normFactor = ((SpecularPower + 2) / 8 );
+
+const vec3 directDiffuse = vec3(0.5);
 
 //uniform mat2x4 dual;
 
-vec3 light(vec3 N, vec3 L, vec3 color)
+float saturate(float a)
 {
-    float NdotL = dot(N, normalize(L));
-        vec3 d = color * NdotL;
-        vec3 halfVector = normalize(L + eye);
-        float HdotN = dot(N, halfVector);
-        vec3 s = 0.4 * vec3(1, 0.8, 0.6) * pow(max(HdotN, 0.), 20.9);
-        return clamp(d+s,0,1);
+    return min(1,max(0,a));
+}
+
+#define OneOnLN2_x6 8.656170 // == 1/ln(2) * 6   (6 is SpecularPower of 5 + 1)
+vec3 FresnelSchlick(vec3 E,vec3 H)
+{
+    return specColor + (1.0f - specColor) * exp2(-OneOnLN2_x6 * saturate(dot(E, H)));
+}
+
+float BlinnPhong(vec3 N, vec3 H)
+{
+    return pow(saturate(dot(N, H)), SpecularPower);
+}
+
+vec3 light(vec3 N, vec3 V, vec3 L, vec3 lightColor)
+{
+    vec3 H = normalize(L+V);
+    float NdotL = dot(N, L);
+
+    vec3 directSpecular = FresnelSchlick(L, H) * BlinnPhong(N, H) * normFactor;
+    return (directDiffuse + directSpecular) * lightColor * max(0,NdotL);
 }
 
 void main()
 {   
     vec3 N = normalize(normal);
-    
-    vec3 color = vec3(0.);
-    color += light(N, L, COLOR2);
-    color += light(N, reflect(L, vec3(-1, 1, 0)), COLOR1);
+    vec3 V = normalize(eye);
+    vec3 L = normalize(vec3(0.12708472893924555, -2.5399460893115735, 2.8320502943377743));
+
+
+    vec3 color = light(N, V, L, COLOR1);
+
+    L = reflect(L, vec3(-1, 1, 0));
+    color += light(N, V, L, COLOR2);
 
     FragColor = toGamma(vec4(color, 1));
-    //FragColor = vec4(zlerp);
 }
