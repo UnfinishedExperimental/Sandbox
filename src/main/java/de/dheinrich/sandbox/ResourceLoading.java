@@ -114,10 +114,10 @@ public class ResourceLoading implements GLEventListener {
         cache.addListener(sphereS);
 
         cache.getView().loadIdentity();
-        cache.getView().translate(0, 0, 5);
+//        cache.getView().translate(0, 0, 5);
 //        cache.getView().rotateEuler(-10, 0, 0);
-        cache.getView().inverse();
-        cache.fireChange(MatType.VIEW);
+//        cache.getView().inverse();
+//        cache.fireChange(MatType.VIEW);
 
         GL2GL3 gl = glad.getGL().getGL2GL3();
         gl.glClearColor(0.3f, 0.3f, 0.3f, 1);
@@ -161,8 +161,6 @@ public class ResourceLoading implements GLEventListener {
                                           0,
                                           forward || backward ? conv(forward) * speed : 0);
                 cache.fireChange(MatType.VIEW);
-                
-                System.out.println(cache.getView().getTranslation());
             }
         });
     }

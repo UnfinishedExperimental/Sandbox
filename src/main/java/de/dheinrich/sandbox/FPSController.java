@@ -5,6 +5,7 @@
 package de.dheinrich.sandbox;
 
 import darwin.core.controls.*;
+import darwin.util.math.base.Quaternion;
 import darwin.util.math.base.matrix.Matrix4;
 import darwin.util.math.base.vector.Vector3;
 import darwin.util.math.composits.ViewMatrix;
@@ -25,14 +26,20 @@ public class FPSController implements ViewModel {
     public ViewMatrix getView() {
         return matrix;
     }
-        
+    float x, y;
+
     @Override
     public void dragged(float dx, float dy) {
-        float x = 90*dx;
-        float y = 90*dy;
-        
-        matrix.rotateEuler(0, x, 0);
-        matrix.rotateEuler(y, 0, 0);
+        x += 90 * dx;
+        y += 90 * dy;
+
+        Quaternion q = new Quaternion();
+        q.setEularAngles(y, x, 0);
+                
+        Vector3 up = q.mult(new Vector3(0, 1, 0));
+        Vector3 target = q.mult(new Vector3(0, 0, -1)).add(matrix.getTranslation());
+                
+        matrix.lookAt(matrix.getTranslation(), target, up);
     }
 
     @Override
@@ -71,11 +78,28 @@ public class FPSController implements ViewModel {
     }
     
     public static void main(String... args) {
+        
+        Quaternion q = new Quaternion();
+        q.setEularAngles(45, 0, 0);
+        
+        Quaternion x = new Quaternion();
+        x.setEularAngles(0, 90, 0);
+        
+        q = x.add(q).normalize();        
+        System.out.println(q);
+        System.out.println(q.mult(new Vector3(0, 0, -1)));
+        
+        q.mapVector(new Vector3(0, 0, -1), new Vector3(-1, 1, 0).normalize());
+        System.out.println(q);
+        System.out.println(q.mult(new Vector3(0, 0, -1)));
+        
         Matrix4 m = new Matrix4();
         m.loadIdentity();
-        m.translate(0, 0, -1);
-        m.rotateEuler(90, 0, 0);        
-        
-        System.out.println(m.fastMult(new Vector3()));
+        m.rotateEuler(0, 90, 0);
+        m.rotateEuler(45, 0, 0);
+        q=m.getRotation().normalize();
+        System.out.println(q);
+        System.out.println(q.mult(new Vector3(0, 0, -1)));
+        System.out.println(m.fastMult(new Vector3(0, 0, -1)));
     }
 }
