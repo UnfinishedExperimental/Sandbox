@@ -28,7 +28,7 @@ public final class SphereGenerator {
 
         sideCount = 2 + (tessFactor - 1);
         int vertexCount = sideCount * sideCount * 6;
-        vertexCount -= 2 * sideCount + 12;
+        //vertexCount -= 2 * sideCount + 12;
 
         buffer = new VertexBuffer(position, vertexCount);
         indices = new int[6 * tessFactor * tessFactor * 2 * 3];//tf² = number of quads, * 2 = each quad has two tris, *3=each tris has 3 indices
@@ -81,7 +81,7 @@ public final class SphereGenerator {
     }
 
     private void createSidePlaneY(ImmutableVector<Vector3> offset, boolean isLeft) {
-        for (int i = 1; i < sideCount - 1; i++) {
+        for (int i = 0; i < sideCount; i++) {
             Vector3 side = new Vector3(0, 0, CUBE_SIDE_LENGTH);
             side.mul((float) i / (sideCount - 1)).add(offset);
             createVerticalRow(side);
@@ -96,7 +96,7 @@ public final class SphereGenerator {
     }
 
     private void createVerticalRow(ImmutableVector<Vector3> offset) {
-        for (int i = 1; i < sideCount - 1; i++) {
+        for (int i = 0; i < sideCount; i++) {
             addVertex(new Vector3(0, CUBE_SIDE_LENGTH, 0), i, offset);
         }
     }

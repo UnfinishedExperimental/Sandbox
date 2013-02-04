@@ -25,7 +25,7 @@ void main()
 zlerp = pow(zlerp , 2);
 
     vec4 d1 = dual1;
-    d1.x *= zlerp;
+    d1.x *= 0;//zlerp;
     vec4 d2 = dual2;
 
     float len = length(d1);
