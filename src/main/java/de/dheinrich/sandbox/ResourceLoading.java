@@ -32,8 +32,8 @@ public class ResourceLoading implements GLEventListener {
     private Shader sphereS;
     @InjectBundle(files = {"simple.frag", "simple.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
     private Shader shader;
-    @InjectResource(file = "sp.ctm")
-    //    @InjectResource(file = "women.obj")
+//    @InjectResource(file = "sp.ctm")
+        @InjectResource(file = "resources/models/arrow.json")
     private Model[] test;
     @Inject
     private RenderModelFactory modeler;
