@@ -4,31 +4,62 @@
  */
 package de.dheinrich.sandbox;
 
-import darwin.util.math.base.vector.ImmutableVector;
-import darwin.util.math.base.vector.Vector3;
+import java.lang.reflect.*;
+import java.util.Arrays;
 
 /**
  *
  * @author Daniel Heinrich <dannynullzwo@gmail.com>
  */
-public class Test {
+public class Test<E extends Number> {
 
-    public final ImmutableVector<Vector3> a;
-
-    public Test(ImmutableVector<Vector3> a) {
-        this.a = a;
+    void test1(E e) {
+        try {
+            E[] a = alloc(3);
+            a[0] = e;
+            System.out.println("test1 win");
+        } catch (Throwable t) {
+            System.out.println("test1 fail");
+        }
     }
 
-    @Override
-    public String toString() {
-        return a.toString();
+    void test2(E e) {
+        try {
+            E b = null;
+            E[] a = alloc(3, b);
+            a[0] = e;
+            System.out.println("test2 win");
+        } catch (Throwable t) {
+            System.out.println("test2 fail");
+        }
+    }
+
+    void test3(E e) {
+        try {
+            E[] a = (E[]) new Number[3];
+            a[0] = e;
+            System.out.println("test3 win");
+        } catch (Throwable t) {
+            System.out.println("test2 fail");
+        }
+    }
+
+    public  E[] alloc(int length, E... base) {
+        System.out.println(base.getClass().getComponentType());
+        return Arrays.copyOf(base, length);
+    }
+
+    void printGeneric(Class<?> c) {
+        final Type superclass = c.getGenericSuperclass();
+
+        final Type[] types = ((ParameterizedType) superclass).getActualTypeArguments();
+        System.out.println(Arrays.toString(types));
     }
 
     public static void main(String[] args) {
-        Vector3 vector3 = new Vector3(1, 2, 3);
-        Test test = new Test(vector3);
-        System.out.println(test);
-        vector3.add(3);
-        System.out.println(test);
+        Test<Integer> a = new Test<Integer>();
+        a.test1(3);
+        a.test2(3);
+        a.test3(3);
     }
 }

@@ -17,7 +17,9 @@ import darwin.util.math.composits.ViewMatrix;
 public class FPSController implements ViewModel {
 
     private final ViewMatrix matrix = new ViewMatrix();
-
+    private float rx, ry, px, py;
+    
+    
     public FPSController() {
         matrix.loadIdentity();
     }
@@ -26,15 +28,14 @@ public class FPSController implements ViewModel {
     public ViewMatrix getView() {
         return matrix;
     }
-    float x, y;
 
     @Override
     public void dragged(float dx, float dy) {
-        x += 90 * dx;
-        y += 90 * dy;
+        rx += 90 * dx;
+        ry += 90 * dy;
 
         Quaternion q = new Quaternion();
-        q.setEularAngles(y, x, 0);
+        q.setEularAngles(ry, rx, 0);
                 
         Vector3 up = q.mult(new Vector3(0, 1, 0));
         Vector3 target = q.mult(new Vector3(0, 0, -1)).add(matrix.getTranslation());
@@ -75,31 +76,5 @@ public class FPSController implements ViewModel {
     @Override
     public void removeListener(ViewListener listener) {
         throw new UnsupportedOperationException("Not supported yet.");
-    }
-    
-    public static void main(String... args) {
-        
-        Quaternion q = new Quaternion();
-        q.setEularAngles(45, 0, 0);
-        
-        Quaternion x = new Quaternion();
-        x.setEularAngles(0, 90, 0);
-        
-        q = x.add(q).normalize();        
-        System.out.println(q);
-        System.out.println(q.mult(new Vector3(0, 0, -1)));
-        
-        q.mapVector(new Vector3(0, 0, -1), new Vector3(-1, 1, 0).normalize());
-        System.out.println(q);
-        System.out.println(q.mult(new Vector3(0, 0, -1)));
-        
-        Matrix4 m = new Matrix4();
-        m.loadIdentity();
-        m.rotateEuler(0, 90, 0);
-        m.rotateEuler(45, 0, 0);
-        q=m.getRotation().normalize();
-        System.out.println(q);
-        System.out.println(q.mult(new Vector3(0, 0, -1)));
-        System.out.println(m.fastMult(new Vector3(0, 0, -1)));
     }
 }

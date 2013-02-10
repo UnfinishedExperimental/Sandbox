@@ -4,10 +4,6 @@
  */
 package de.dheinrich.sandbox;
 
-import de.dheinrich.sandbox.meshstuff.MeshUtil;
-import java.nio.charset.Charset;
-import java.nio.file.*;
-
 import darwin.core.controls.*;
 import darwin.core.gui.*;
 import darwin.core.timing.*;
@@ -23,9 +19,8 @@ import darwin.util.math.composits.AABB;
 import darwin.util.math.util.*;
 
 import com.google.common.base.Optional;
-import com.google.common.cache.Cache;
 import com.jogamp.newt.event.*;
-import de.dheinrich.sandbox.meshstuff.*;
+import de.dheinrich.sandbox.meshstuff.MeshUtil;
 import javax.inject.Inject;
 import javax.media.opengl.*;
 
