@@ -52,9 +52,9 @@ public class ResourceLoading implements GLEventListener {
 
         final ResourceLoading a = client.addGLEventListener(ResourceLoading.class);
 
-        ViewModel vm = new FPSController();
-        a.cache.setView(vm.getView());
-        client.addMouseListener(new InputController(vm, null, a.cache));
+//        ViewModel vm = new FPSController();
+//        a.cache.setView(vm.getView());
+//        client.addMouseListener(new InputController(vm, null, a.cache));
         client.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent ke) {
@@ -109,10 +109,10 @@ public class ResourceLoading implements GLEventListener {
         cache.addListener(sphereS);
 
         cache.getView().loadIdentity();
-//        cache.getView().translate(0, 0, 5);
+        cache.getView().translate(0, 0, 7);
 //        cache.getView().rotateEuler(-10, 0, 0);
-//        cache.getView().inverse();
-//        cache.fireChange(MatType.VIEW);
+        cache.getView().inverse();
+        cache.fireChange(MatType.VIEW);
 
         GL2GL3 gl = glad.getGL().getGL2GL3();
         gl.glClearColor(0.3f, 0.3f, 0.3f, 1);
@@ -150,12 +150,12 @@ public class ResourceLoading implements GLEventListener {
                 un2.get().setData(dual[1].toArray());
 
 
-                float speed = (float) (100 * timeDelta);
-                
-                cache.getView().translate(left || right ? conv(left) * speed : 0,
-                                          0,
-                                          forward || backward ? conv(forward) * speed : 0);
-                cache.fireChange(MatType.VIEW);
+//                float speed = (float) (100 * timeDelta);
+//                
+//                cache.getView().translate(left || right ? conv(left) * speed : 0,
+//                                          0,
+//                                          forward || backward ? conv(forward) * speed : 0);
+//                cache.fireChange(MatType.VIEW);
             }
         });
     }
@@ -169,46 +169,52 @@ public class ResourceLoading implements GLEventListener {
         time.update();
         glad.getGL().glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-        if (shader.isInitialized()) {
-            if (model == null) {
-//                NormalGenerator g = new NormalGenerator();
-//                Mesh m = g.modifie(test[0].getMesh());
-//                model = modeler.create(new Model(m, null), shader);
-                model = modeler.create(test[0], shader);
-                AABB a = MeshUtil.calcAABB(test[0].getMesh().getVertices());
-                System.out.println(a);
-                for (Vector3 v : a.getCorners()) {
-                    GenericVector gv = new GenericVector(v.x, v.y, v.z, 1);
-                    Vector mult = cache.getViewProjection().mult(gv);
-                    mult.div(mult.getCoords()[3]);
-                    System.out.println(mult);
-                }
-            }
-            shader.updateUniformData();
-            model.render();
-
-        }
+//        if (shader.isInitialized()) {
+//            if (model == null) {
+////                NormalGenerator g = new NormalGenerator();
+////                Mesh m = g.modifie(test[0].getMesh());
+////                model = modeler.create(new Model(m, null), shader);
+//                model = modeler.create(test[0], shader);
+//                AABB a = MeshUtil.calcAABB(test[0].getMesh().getVertices());
+//                System.out.println(a);
+//                for (Vector3 v : a.getCorners()) {
+//                    GenericVector gv = new GenericVector(v.x, v.y, v.z, 1);
+//                    Vector mult = cache.getViewProjection().mult(gv);
+//                    mult.div(mult.getCoords()[3]);
+//                    System.out.println(mult);
+//                }
+//            }
+//            shader.updateUniformData();
+//            model.render();
+//
+//        }
         if (sphereS.isInitialized()) {
             if (sphere == null) {
                 SphereGenerator gen = new SphereGenerator(10);
                 Model m = new Model(new Mesh(gen.getIndices(), gen.getVertexBuffer(), GL.GL_TRIANGLES), null);
+                sphere = modeler.create(m, sphereS);
                 AABB a = MeshUtil.calcAABB(m.getMesh().getVertices());
                 System.out.println(a);
-                sphere = modeler.create(m, sphereS);
+                for (Vector3 v : a.getCorners()) {
+                    GenericVector gv = new GenericVector(v.x, v.y, v.z, 1);
+                    Vector<?> mult = cache.getViewProjection().mult(gv);
+                    mult.div(mult.getCoords()[3]);
+                    System.out.println(mult);
+                }
             }
             sphereS.updateUniformData();
 
-//            cache.getModel().loadIdentity();
-//            cache.fireChange(MatType.MODEL);
-//            sphere.render();
-//
-//            cache.getModel().translate(-3, 0, 0);
-//            cache.fireChange(MatType.MODEL);
-//            sphere.render();
-//
-//            cache.getModel().translate(6, 0, 0);
-//            cache.fireChange(MatType.MODEL);
-//            sphere.render();
+            cache.getModel().loadIdentity();
+            cache.fireChange(MatType.MODEL);
+            sphere.render();
+
+            cache.getModel().translate(-3, 0, 0);
+            cache.fireChange(MatType.MODEL);
+            sphere.render();
+
+            cache.getModel().translate(6, 0, 0);
+            cache.fireChange(MatType.MODEL);
+            sphere.render();
 
         }
     }

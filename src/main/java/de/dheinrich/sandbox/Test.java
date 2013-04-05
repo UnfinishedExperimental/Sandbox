@@ -15,6 +15,7 @@ public class Test<E extends Number> {
 
     void test1(E e) {
         try {
+            @SuppressWarnings("unchecked")
             E[] a = alloc(3);
             a[0] = e;
             System.out.println("test1 win");
