@@ -24,6 +24,7 @@ public class MeshUtil {
     }
 
     public static void switchOrdering(Mesh m) {
+        
         int[] i = m.getIndicies();
         for (int j = 0; j < i.length; j += 3) {
             int t = i[j];

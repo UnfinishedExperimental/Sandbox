@@ -77,29 +77,29 @@ public class FPSController implements ViewModel {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     
-    public static void main(String... args) {
-        
-        Quaternion q = new Quaternion();
-        q.setEularAngles(45, 0, 0);
-        
-        Quaternion x = new Quaternion();
-        x.setEularAngles(0, 90, 0);
-        
-        q = x.add(q).normalize();        
-        System.out.println(q);
-        System.out.println(q.mult(new Vector3(0, 0, -1)));
-        
-        q.mapVector(new Vector3(0, 0, -1), new Vector3(-1, 1, 0).normalize());
-        System.out.println(q);
-        System.out.println(q.mult(new Vector3(0, 0, -1)));
-        
-        Matrix4 m = new Matrix4();
-        m.loadIdentity();
-        m.rotateEuler(0, 90, 0);
-        m.rotateEuler(45, 0, 0);
-        q=m.getRotation().normalize();
-        System.out.println(q);
-        System.out.println(q.mult(new Vector3(0, 0, -1)));
-        System.out.println(m.fastMult(new Vector3(0, 0, -1)));
-    }
+//    public static void main(String... args) {
+//        
+//        Quaternion q = new Quaternion();
+//        q.setEularAngles(45, 0, 0);
+//        
+//        Quaternion x = new Quaternion();
+//        x.setEularAngles(0, 90, 0);
+//        
+//        q = x.add(q).normalize();        
+//        System.out.println(q);
+//        System.out.println(q.mult(new Vector3(0, 0, -1)));
+//        
+//        q.mapVector(new Vector3(0, 0, -1), new Vector3(-1, 1, 0).normalize());
+//        System.out.println(q);
+//        System.out.println(q.mult(new Vector3(0, 0, -1)));
+//        
+//        Matrix4 m = new Matrix4();
+//        m.loadIdentity();
+//        m.rotateEuler(0, 90, 0);
+//        m.rotateEuler(45, 0, 0);
+//        q=m.getRotation().normalize();
+//        System.out.println(q);
+//        System.out.println(q.mult(new Vector3(0, 0, -1)));
+//        System.out.println(m.fastMult(new Vector3(0, 0, -1)));
+//    }
 }

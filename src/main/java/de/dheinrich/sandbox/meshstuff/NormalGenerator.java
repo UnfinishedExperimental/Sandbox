@@ -18,6 +18,7 @@ import org.slf4j.helpers.NOPLogger;
 import static darwin.geometrie.data.DataType.FLOAT;
 import static darwin.geometrie.io.ModelReader.*;
 
+
 /**
  *
  * @author Daniel Heinrich <dannynullzwo@gmail.com>
@@ -28,7 +29,7 @@ public class NormalGenerator implements MeshModifier {
     private Logger logger = NOPLogger.NOP_LOGGER;
     private static final Element position = new Element(new GenericVector(FLOAT, 3), POSITION_ATTRIBUTE);
     private static final Element normal = new Element(new GenericVector(FLOAT, 3), NORMAL_ATTRIBUTE);
-
+    
     @Override
     public Mesh modifie(Mesh m) {
         VertexBuffer old = m.getVertices();
@@ -78,10 +79,10 @@ public class NormalGenerator implements MeshModifier {
         ImmutableVector<Vector3> p1 = getPosition(v0);
         ImmutableVector<Vector3> p2 = getPosition(v1);
         ImmutableVector<Vector3> p3 = getPosition(v2);
-        
+
         Vector3 to1 = p1.clone().sub(p2);
         Vector3 to3 = p3.clone().sub(p2);
-        
+
         return to3.cross(to1).normalize();
     }
 

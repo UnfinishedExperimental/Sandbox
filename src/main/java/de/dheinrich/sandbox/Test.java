@@ -4,31 +4,29 @@
  */
 package de.dheinrich.sandbox;
 
-import darwin.util.math.base.vector.ImmutableVector;
-import darwin.util.math.base.vector.Vector3;
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  *
  * @author Daniel Heinrich <dannynullzwo@gmail.com>
  */
-public class Test {
+public class Test<E> {
 
-    public final ImmutableVector<Vector3> a;
-
-    public Test(ImmutableVector<Vector3> a) {
-        this.a = a;
+    public Test() {
+        E[] r = alloc(7);
+        System.out.println(r.length);
+        E[] rr = (E[]) new Test[10];
+        System.out.println(rr.length);
     }
 
-    @Override
-    public String toString() {
-        return a.toString();
+    final <H> H[] alloc(int size, H... a) {
+        return Arrays.copyOf(a, size);
     }
 
-    public static void main(String[] args) {
-        Vector3 vector3 = new Vector3(1, 2, 3);
-        Test test = new Test(vector3);
-        System.out.println(test);
-        vector3.add(3);
-        System.out.println(test);
+    public static void main(String[] args) throws IOException {
+        int count = 7;
+        String[] cmd = {"sh", "-c", "echo \"" + count + " new attacks\" | festival --tts"};
+        Runtime.getRuntime().exec(cmd);
     }
 }

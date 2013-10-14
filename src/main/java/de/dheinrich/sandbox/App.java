@@ -32,7 +32,7 @@ public class App extends MouseAdapter implements GLEventListener {
     //
     @InjectBundle(files = {"sphere.frag", "sphere.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
     private Shader sphereShader;
-    @InjectResource(file = TextureLoader.TEXTURE_PATH_PREFIX + "screen.png")
+    @InjectResource(file = TextureLoader.TEXTURE_PATH_PREFIX + "Cloud3.png")
     private Texture fireTexture;
     //
     private RenderMesh mesh;

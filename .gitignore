@@ -1,3 +1,7 @@
 target/
 test*
 lwjgl*
+run*
+*.log
+.*
+ocr/

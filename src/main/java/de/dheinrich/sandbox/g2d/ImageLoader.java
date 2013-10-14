@@ -8,6 +8,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+import darwin.core.gui.ImageFrame;
 import darwin.resourcehandling.factory.ResourceFromHandle;
 import darwin.resourcehandling.handle.ResourceHandle;
 import darwin.util.image.ImageUtil2;
@@ -47,7 +48,7 @@ public class ImageLoader implements ResourceFromHandle<Image> {
         if (scaleOption.absolute) {
             scale /= img.getWidth();
         }
-
+        
         return ImageUtil2.getScaledImage(img, Math.round(img.getWidth() * scale),
                                          Math.round(img.getHeight() * scale), true);
     }
