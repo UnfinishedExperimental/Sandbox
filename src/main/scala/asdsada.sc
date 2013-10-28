@@ -6,6 +6,7 @@ import shapeless.Nat._
 import Angles._
 
 object asdsada {
+
   import Matrix._
 
   val m = Matrix.builder[_4, _3]().build(identity)//> m  : de.dheinrich.sandbox.matrix.GenMatrix[shapeless.Nat._4,shapeless.Nat._3

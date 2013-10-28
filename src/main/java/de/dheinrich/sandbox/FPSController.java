@@ -5,66 +5,157 @@
 package de.dheinrich.sandbox;
 
 import darwin.core.controls.*;
-import darwin.util.math.base.Quaternion;
-import darwin.util.math.base.matrix.Matrix4;
-import darwin.util.math.base.vector.Vector3;
+import darwin.core.timing.*;
+import darwin.util.math.base.*;
+import darwin.util.math.base.vector.*;
 import darwin.util.math.composits.ViewMatrix;
+import darwin.util.math.util.*;
+
+import com.jogamp.newt.event.*;
 
 /**
  *
  * @author Daniel Heinrich <dannynullzwo@gmail.com>
  */
-public class FPSController implements ViewModel {
+public class FPSController extends KeyAdapter implements ViewModel {
 
-    private final ViewMatrix matrix = new ViewMatrix();
+    private static final float SPEED = 120;
+    private final ViewMatrix inverse = new ViewMatrix();
+    private float x, y;
+    private final Quaternion rotation = new Quaternion();
+    private final Vector3 position = new Vector3();
+    private boolean forward, backward, left, right;
 
     public FPSController() {
-        matrix.loadIdentity();
+        inverse.loadIdentity();
+        rotation.setAxisAngle(Vector3.POS_X, 0);
     }
 
     @Override
     public ViewMatrix getView() {
-        return matrix;
+        return inverse;
     }
-    float x, y;
+
+    private void resetInverse() {
+        inverse.loadIdentity();
+        inverse.rotate(rotation);
+        inverse.setWorldTranslate(position);
+        
+        inverse.inverse();
+    }
 
     @Override
     public void dragged(float dx, float dy) {
-        x += 90 * dx;
-        y += 90 * dy;
+        x += dy * SPEED;
+        y += dx * SPEED;
+        
+        rotation.setAxisAngle(Vector3.POS_Y, y);
+        
+        Quaternion rx = new Quaternion();
+        rx.setAxisAngle(Vector3.POS_X, x);
+        
+        rotation.mult(rx);
+        
+        resetInverse();
+    }
 
-        Quaternion q = new Quaternion();
-        q.setEularAngles(y, x, 0);
-                
-        Vector3 up = q.mult(new Vector3(0, 1, 0));
-        Vector3 target = q.mult(new Vector3(0, 0, -1)).add(matrix.getTranslation());
-                
-        matrix.lookAt(matrix.getTranslation(), target, up);
+    public DeltaListener forCach(final MatrixCache cache) {
+        return new DeltaListener() {
+            @Override
+            public void update(double timeDelta) {
+                if (left || right || forward || backward) {
+                    float speed = (float) (10 * timeDelta);
+
+                    Vector3 trans = new Vector3(left || right ? conv(left) * speed : 0,
+                                                0,
+                                                forward || backward ? conv(forward) * speed : 0);
+                    
+                    position.add(rotation.getRotationMatrix().fastMult(trans));
+                    resetInverse();
+                    cache.fireChange(MatType.VIEW);
+                }
+            }
+           
+
+            private int conv(boolean b) {
+                return b ? -1 : 1;
+            }
+        };
+    }
+
+    @Override
+    public void keyReleased(KeyEvent ke) {
+        switch (ke.getKeyCode()) {
+            case 'W':
+                forward = false;
+                break;
+            case 'A':
+                left = false;
+                break;
+            case 'S':
+                backward = false;
+                break;
+            case 'D':
+                right = false;
+                break;
+            case 'R':
+                resetView();
+                break;
+        }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent ke) {
+        switch (ke.getKeyCode()) {
+            case 'W':
+                forward = true;
+                break;
+            case 'A':
+                left = true;
+                break;
+            case 'S':
+                backward = true;
+                break;
+            case 'D':
+                right = true;
+                break;
+        }
     }
 
     @Override
     public void steps(int steps, boolean ctrl, boolean shift) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    public void setPosition(float x, float y, float z){
+        position.x = x;
+        position.y = y;
+        position.z = z;        
+        resetInverse();
     }
 
     @Override
     public void resetView() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        position.mul(0);
+        x = y = 0;
+        resetInverse();
     }
 
     @Override
     public void resetViewX() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        position.x = 0;
+        resetInverse();
     }
 
     @Override
     public void resetViewY() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        position.y = 0;
+        resetInverse();
     }
 
     @Override
     public void resetViewZ() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        position.z = 0;
+        resetInverse();
     }
 
     @Override
@@ -76,7 +167,6 @@ public class FPSController implements ViewModel {
     public void removeListener(ViewListener listener) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-    
 //    public static void main(String... args) {
 //        
 //        Quaternion q = new Quaternion();

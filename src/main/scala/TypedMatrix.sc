@@ -5,24 +5,18 @@ import shapeless.Nat._
 
 object TypedMatrix {
 
-  def main(args: Array[String]) {}                //> main: (args: Array[String])Unit
+  def main(args: Array[String]) {}
 
-  def bench(be: Bench) {
+  def bench(be: Bench[_]) {
 
-    val count = 100000
-
+    val count = 10000
+   
     Bench.runs(10) { () =>
-      be.timeMine(count)
-      //be.timeCross(count)
-      be.timeLibGDX(count)
-      //be.timeCrossLGX(count)
+      be.time(count)
     }
 
     timed { () =>
-      be.timeMine(count)
-    }
-    timed { () =>
-      be.timeLibGDX(count)
+      be.time(count)
     }
  
     def timed(f: () => Any) = {
@@ -33,13 +27,13 @@ object TypedMatrix {
     }
 
     //Bench.test
-  }                                               //> bench: (be: de.dheinrich.sandbox.matrix.Bench)Unit
+  }
+   
   
-  
-  //bench(new BenchDot)
-  bench(new BenchCross)                           //> 186.55511ms
-                                                  //| 90.35115ms
-  //bench(new BenchPlus)
+  bench(Bench.bufPlusCopy)
+  bench(Bench.myPlus)
+  bench(Bench.bufPlus)
+  bench(Bench.ldxPlus)
   
 //import com.google.caliper._
 

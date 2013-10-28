@@ -36,14 +36,11 @@ class GenMatrix[X <: Nat, Y <: Nat](implicit val toIntX: ToInt[X], val toIntY: T
 
   override def toString() = {
     data.toSeq.
-      grouped(width).
-      map(_.mkString(",\t")).
-      mkString("\n[", "\n", "]")
+    grouped(width).
+    map(_.mkString(",\t")).
+    mkString("\n[", "\n", "]")
   }
 }
-//abstract classtrait BaseVector[N <: Nat](implicit val toInt: ToInt[N]) extends Vector[N] {
-//  val size = toInt()
-//}
 
 class Vector3(var x: Float = 0, var y: Float = 0, var z: Float = 0) extends Vector[_3] {
   override val size = 3
@@ -54,12 +51,10 @@ class Vector3(var x: Float = 0, var y: Float = 0, var z: Float = 0) extends Vect
     case 2 => z
   }
 
-  def update(i: Int, v: Float) {
-    i match {
-      case 0 => x = v
-      case 1 => y = v
-      case 2 => z = v
-    }
+  def update(i: Int, v: Float) = i match {
+    case 0 => x = v
+    case 1 => y = v
+    case 2 => z = v
   }
 
   def update(start: Int, ar: Array[Float]) {
@@ -67,15 +62,33 @@ class Vector3(var x: Float = 0, var y: Float = 0, var z: Float = 0) extends Vect
     y = ar(start + 1)
     z = ar(start + 2)
   }
+  
+  override def inplace(o: Vector[_3], f: (Float, Float) => Float) {
+    o match {
+      case v3: Vector3 =>
+        x = f(x, v3.x)
+        y = f(y, v3.y)
+        z = f(z, v3.z)
+      case ov=>
+        x = f(x, ov(0))
+        y = f(y, ov(1))
+        z = f(z, ov(2))
+    }
+  }
+  
+  override def inplace(o: Float, f: (Float, Float) => Float) {
+    x = f(x, o)
+    y = f(y, o)
+    z = f(z, o)
+  }
 
   def dot(ov: Vector3) = x * ov.x + y * ov.y + z * ov.z
-  override def dot(o: Vector[_3]) = dot(o.asInstanceOf[Vector3])
 
   def cross(o: Vector3) = {
     val xx = y * o.z - z * o.y
     val yy = z * o.x - x * o.z
     val zz = x * o.y - y * o.x
-    new Vector3(x, y, z) with ColumnVector[_3]
+    new Vector3(xx, yy, zz) with ColumnVector[_3]
   }
 }
 

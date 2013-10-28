@@ -9,27 +9,22 @@ import de.dheinrich.sandbox.meshstuff.MeshUtil;
 import darwin.core.controls.*;
 import darwin.core.gui.*;
 import darwin.core.timing.*;
-import darwin.geometrie.data.Element;
-import darwin.geometrie.data.VertexBuffer;
 import darwin.geometrie.unpacked.*;
-import darwin.renderer.geometrie.factorys.ScreenQuad;
 import darwin.renderer.geometrie.packed.RenderModel;
 import darwin.renderer.geometrie.packed.RenderModel.RenderModelFactory;
 import darwin.renderer.shader.*;
 import darwin.resourcehandling.dependencies.annotation.*;
 import darwin.resourcehandling.shader.ShaderLoader;
-import darwin.util.math.base.Quaternion;
-import darwin.util.math.base.vector.*;
+import darwin.resourcehandling.texture.*;
 import darwin.util.math.composits.AABB;
 import darwin.util.math.util.*;
 
-import com.google.common.base.Optional;
-import com.jogamp.newt.event.*;
+import com.google.common.base.*;
+import com.jogamp.opengl.util.texture.*;
+import de.dheinrich.sandbox.meshstuff.*;
 import javax.inject.Inject;
 import javax.media.opengl.*;
 
-import static darwin.geometrie.io.ModelReader.POSITION_ATTRIBUTE;
-import static darwin.renderer.opengl.GLSLType.VEC2;
 
 /**
  *
@@ -37,18 +32,21 @@ import static darwin.renderer.opengl.GLSLType.VEC2;
  */
 public class ResourceLoading implements GLEventListener {
 
-    @InjectBundle(files = {"voxel.frag", "voxel.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
-    private Shader voxelShader;
-//    @InjectBundle(files = {"simple.frag", "simple.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
-//    private Shader shader;
-//    @InjectResource(file = "crytek-sponza/sponza.ctm")
-//    private Model[] test;
+    @InjectBundle(files = {"sphere.frag", "sphere.vert"}, prefix = ShaderLoader.SHADER_PATH_PREFIX)
+    private Shader shader;
+    @InjectResource(file = "kinect.ctm")
+    private Model[] kinect;
+    @InjectResource(file = "out.png")
+    private Texture rgb;
+    
     @Inject
     private RenderModelFactory modeler;
-    private RenderModel model, voxel;
+    @Inject 
+    private TextureUtil texUtil;
+    
+    private RenderModel model;
     private MatrixCache cache = new MatrixCache();
     private GameTime time = new GameTime();
-    private boolean forward, backward, left, right;
 
     public static void main(String[] args) throws InstantiationException {
         boolean debug = true;
@@ -59,48 +57,12 @@ public class ResourceLoading implements GLEventListener {
 
         final ResourceLoading a = client.addGLEventListener(ResourceLoading.class);
 
-//        ViewModel vm = new FPSController();
-//        a.cache.setView(vm.getView());
-//        client.addMouseListener(new InputController(vm, null, a.cache));
-        //<editor-fold defaultstate="collapsed" desc="comment">
-//        client.addKeyListener(new KeyAdapter() {
-//            @Override
-//            public void keyReleased(KeyEvent ke) {
-//                switch (ke.getKeyCode()) {
-//                    case 'W':
-//                        a.forward = false;
-//                        break;
-//                    case 'A':
-//                        a.left = false;
-//                        break;
-//                    case 'S':
-//                        a.backward = false;
-//                        break;
-//                    case 'D':
-//                        a.right = false;
-//                        break;
-//                }
-//            }
-//
-//            @Override
-//            public void keyPressed(KeyEvent ke) {
-//                switch (ke.getKeyCode()) {
-//                    case 'W':
-//                        a.forward = true;
-//                        break;
-//                    case 'A':
-//                        a.left = true;
-//                        break;
-//                    case 'S':
-//                        a.backward = true;
-//                        break;
-//                    case 'D':
-//                        a.right = true;
-//                        break;
-//                }
-//            }
-//        });
-        //</editor-fold>
+        FPSController vm = new FPSController();
+        a.cache.setView(vm.getView());
+        client.addMouseListener(new InputController(vm, null, a.cache));
+        client.addKeyListener(vm);
+
+        a.time.addListener(vm.forCach(a.cache));
     }
 
     @Override
@@ -108,21 +70,20 @@ public class ResourceLoading implements GLEventListener {
 //        glad.setGL(new DebugGL4(glad.getGL().getGL4()));
 
 //        cache.addListener(shader);
-        cache.addListener(voxelShader);
-
-        cache.getView().loadIdentity();
-//        cache.getView().translate(0, 0, 5);
-//        cache.getView().rotateEuler(-10, 0, 0);
-//        cache.getView().inverse();
-//        cache.fireChange(MatType.VIEW);
+        cache.addListener(shader);
+        
+        texUtil.setTexturePara(rgb, GL.GL_LINEAR, GL2.GL_CLAMP_TO_BORDER);
+        float[] color = {0.1f, 0.1f, 0.1f, 0f};
+        rgb.setTexParameterfv(glad.getGL(), GL2.GL_TEXTURE_BORDER_COLOR, color, 0);
 
         GL2GL3 gl = glad.getGL().getGL2GL3();
         gl.glClearColor(0.3f, 0.3f, 0.3f, 1);
         gl.glDisable(GL.GL_BLEND);
         gl.glEnable(GL.GL_DEPTH_TEST);
+        
         gl.glFrontFace(GL.GL_CCW);
 //        gl.glEnable(GL.GL_CULL_FACE);
-//        gl.glPolygonMode(GL.GL_BACK, GL2.GL_LINE);
+        gl.glPolygonMode(GL.GL_FRONT, GL2.GL_LINE);
 
 //        time.addListener(1, new StepListener() {
 //            int frames;
@@ -136,34 +97,6 @@ public class ResourceLoading implements GLEventListener {
 //                }
 //            }
 //        });
-
-//        time.addListener(new DeltaListener() {
-//            final Quaternion q = new Quaternion();
-//            float time = 0;
-//
-//            @Override
-//            public void update(double timeDelta) {
-//                time += timeDelta;
-//                q.setAxisAngle(new Vector3(0, 1, 0), 720 * ((time / 10) % 1));
-//                Quaternion[] dual = q.toDualQuaternion(new Vector3());
-//                Optional<ShaderUniform> un1 = shader.getUniform("dual1");
-//                un1.get().setData(dual[0].toArray());
-//                Optional<ShaderUniform> un2 = shader.getUniform("dual2");
-//                un2.get().setData(dual[1].toArray());
-//
-//
-//                float speed = (float) (100 * timeDelta);
-//
-//                cache.getView().translate(left || right ? conv(left) * speed : 0,
-//                                          0,
-//                                          forward || backward ? conv(forward) * speed : 0);
-//                cache.fireChange(MatType.VIEW);
-//            }
-//        });
-    }
-
-    private int conv(boolean b) {
-        return b ? 1 : -1;
     }
 
     @Override
@@ -171,47 +104,37 @@ public class ResourceLoading implements GLEventListener {
         time.update();
         glad.getGL().glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-//        if (shader.isInitialized()) {
-//            if (model == null) {
-////                NormalGenerator g = new NormalGenerator();
-////                Mesh m = g.modifie(test[0].getMesh());
-////                model = modeler.create(new Model(m, null), shader);
-//                model = modeler.create(test[0], shader);
-//                AABB a = MeshUtil.calcAABB(test[0].getMesh().getVertices());
-//                System.out.println(a);
+        if (shader.isInitialized()) {
+            Optional<Sampler> diff = shader.getSampler("diffuse");
+            diff.get().bindTexture(rgb);            
+            
+            if (model == null) {
+//                NormalGenerator g = new NormalGenerator();
+//                Mesh m = g.modifie(test[0].getMesh());
+                model = modeler.create(kinect[0], shader);
+                NormalGenerator ng = new NormalGenerator();
+                Mesh m = ng.modifie(kinect[0].getMesh());
+                model = modeler.create(new Model(m, null), shader);
+                
+                AABB a = MeshUtil.calcAABB(kinect[0].getMesh().getVertices());
+                System.out.println(a);
 //                for (Vector3 v : a.getCorners()) {
 //                    GenericVector gv = new GenericVector(v.x, v.y, v.z, 1);
 //                    Vector mult = cache.getViewProjection().mult(gv);
 //                    mult.div(mult.getCoords()[3]);
 //                    System.out.println(mult);
 //                }
-//            }
-//            shader.updateUniformData();
-//            model.render();
-//
-//        }
-        if (voxelShader.isInitialized()) {
-//            if (voxel == null) {
-//                VertexBuffer vb = new VertexBuffer(new Element(VEC2, POSITION_ATTRIBUTE),
-//                -1, -1,
-//                1, -1,
-//                -1, 1,
-//                1, 1);
-//                int[] indices = new int[]{0,1,2};
-//                Model m = new Model(new Mesh(indices, GL.GL_TRIANGLE_STRIP), null);
-//                voxel = modeler.create(m, voxelShader);
-//            }
-            voxelShader.updateUniformData();
-
-//            voxel.render
-            glad.getGL().getGL3bc().glDrawElementsBaseVertex(GL.GL_TRIANGLES, 6, GL.GL_UNSIGNED_INT, null, 0);
+            }
+            
+            shader.updateUniformData();
+            model.render();
         }
     }
 
     @Override
     public void reshape(GLAutoDrawable glad, int x, int y, int width, int height) {
         final float ratio = (float) width / Math.max(1, height);
-        cache.getProjektion().perspective(60, ratio, 0.1, 10000);//ortho(-10, -10, 0.1, 10, 10, 100);//
+        cache.getProjektion().perspective(60, ratio, 0.001f, 1000f); //ortho(-10, -10, -11110.1, 10, 10, 100);//
         cache.fireChange(MatType.PROJECTION);
     }
 

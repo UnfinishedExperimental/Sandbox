@@ -42,7 +42,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+<!--            <plugin>
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>
                 <version>2.15.2</version>
@@ -66,7 +66,7 @@
                 <configuration>
                     <addArgs>-optimise</addArgs>
                 </configuration>
-            </plugin>
+            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -115,7 +115,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>de.dheinrich.sandbox.App</mainClass>
+                            <mainClass>de.dheinrich.sandbox.ResourceLoading</mainClass>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
@@ -228,6 +228,16 @@
 			<artifactId>gdx</artifactId>
 			<version>0.9.9-SNAPSHOT</version>
 		</dependency>
+        <dependency>
+            <groupId>de.dheinrich.Sandbox</groupId>
+            <artifactId>Macros</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>de.dheinrich.Sandbox</groupId>
+            <artifactId>Macros2</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 

@@ -3,55 +3,26 @@ package de.dheinrich.sandbox.matrix
 import com.google.caliper._
 import Vector._
 import com.google.caliper.api.BeforeRep
+import scala.reflect.ClassTag
 import scala.util.Random
 import com.badlogic.gdx.math.{ Vector3 => LGXVector3 }
 import shapeless.Nat._
 
-trait Bench extends Benchmark {
+case class Bench[T: ClassTag](data: Seq[T])(f: (T, T) => Float){
   import Bench._
-  val count = 1000
-  var a = Array.tabulate(count)(i => nextVec3)
-  var b = Array.tabulate(count)(i => nextVec3LGX)
-
-  def timeMine(r: Int) {
-    runs(r) { () =>
+  
+  def time(r: Int){
+    runs(r){()=>
+      val mid = data.length / 2
       var er = 0f
-      var i = 0
-      while (i < count / 2) {
-        er += mine(a(i), a(i + 1))
+      var i = 0      
+      while (i < mid) {
+        er += f(data(i), data(i + mid))
         i += 1
       }
       er
     }
   }
-
-  def timeLibGDX(r: Int) {
-    runs(r) { () =>
-      var er = 0f
-      var i = 0
-      while (i < count / 2) {
-        er += libGDX(b(i), b(i + 1))
-        i += 1
-      }
-      er
-    }
-  }
-
-  def mine(a: Vector3, b: Vector3): Float
-  def libGDX(a: LGXVector3, b: LGXVector3): Float
-}
-
-class BenchDot extends Bench {
-  def mine(a: Vector3, b: Vector3) = a dot b
-  def libGDX(a: LGXVector3, b: LGXVector3) = a dot b
-}
-class BenchCross extends Bench {
-  def mine(a: Vector3, b: Vector3) = (a cross b).x
-  def libGDX(a: LGXVector3, b: LGXVector3) = (new LGXVector3(a) crs b).x
-}
-class BenchPlus extends Bench {
-  def mine(a: Vector3, b: Vector3) = (a + b).x
-  def libGDX(a: LGXVector3, b: LGXVector3) = (new LGXVector3(a) add b).x
 }
 
 object Bench {
@@ -62,6 +33,36 @@ object Bench {
 
   def nextVec3 = Vector[_3](Random.nextFloat, Random.nextFloat, Random.nextFloat)
   def nextVec3LGX = new LGXVector3(Random.nextFloat, Random.nextFloat, Random.nextFloat)
+  
+  
+  val count = 1000
+  
+  
+  val myData = Array.tabulate(count)(i => nextVec3)
+  val ldxData = Array.tabulate(count)(i => nextVec3LGX)
+  val bufData = MappedObject.alloc[Vec](count)
+  for(v <- bufData){
+    v.x = Random.nextFloat
+    v.y = Random.nextFloat
+    v.z = Random.nextFloat
+  }
+  
+  val myDot = Bench(myData)( _ dot _)
+  val myCross = Bench(myData)((a,b) => (a cross b).x)
+  val myPlus = Bench(myData)((a,b) => {(a addI b); a.x})
+  
+  val ldxDot = Bench(ldxData)( _ dot _)
+  val ldxCross = Bench(ldxData)((a,b) => (a crs b).x)
+  val ldxPlus = Bench(ldxData)((a,b) => (a add b).x)
+  
+  val bufDot = Bench(bufData)( _ dot _)
+  val bufCross = Bench(bufData)((a,b) => (a cross b).x)
+  val bufPlus = Bench(bufData)((a,b) => {(a addI b); a.x})
+  
+  def bufPlusCopy = {    
+	var i = 0
+    Bench(myData)((a,b) => {(a addI b); bufData(i%count).copyInto(a); i+=1; a.x})
+  }
 
   def runs(runs: Int)(f: () => Any) {
     var r = runs
@@ -72,21 +73,4 @@ object Bench {
     }
     a
   }
-
-  def what() {
-    val m = Matrix.builder[_3, _3]().build(i => i)
-    val v = m.row(0) cross m.column(1)
-
-    println(m)
-    println(v)
-  }
-}
-
-object BenchApp {
-  import Bench._
-
-  def main(args: Array[String]) {
-    what()
-  }
-
 }

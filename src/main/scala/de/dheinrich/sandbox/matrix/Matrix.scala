@@ -126,7 +126,7 @@ trait Matrix[X <: Nat, Y <: Nat] {
   def row[M <: Row[X]](n: Int)(implicit b: Builder[X, _1, M]) = b.build(this(_, n))
 
   def mult[T <: Nat, M <: Matrix[T, Y], M2 <: Row[X], M3 <: Column[X]](o: Matrix[T, X])(implicit b: Builder[T, Y, M],
-    b2: Builder[X, _1, M2], b3: Builder[_1, X, M3]) = {
+                                                                                        b2: Builder[X, _1, M2], b3: Builder[_1, X, M3]) = {
     b.build(o.column(_) dot row(_))
   }
 
