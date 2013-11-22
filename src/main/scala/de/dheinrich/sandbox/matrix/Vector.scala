@@ -43,11 +43,11 @@ trait Vector[N <: Nat] extends BaseVector[N]{
     b.build(x => -this(x))
   }
   
-  def test(other: BaseVector[N])(func:(Float,Float) => Float)(implicit max: ToInt[N]) = macro VectorMacros2.updateAll[N]
+  //def test(other: BaseVector[N])(func:(Float,Float) => Float)(implicit max: ToInt[N]) = macro VectorMacros2.updateAll[N]
 
   def -[M <: ColumnVector[N]](o: Vector[N])(implicit b: Builder[_1, N, M]) = onCopy(o, (_:Float) - (_:Float))
   def -[M <: ColumnVector[N]](o: Float)(implicit b: Builder[_1, N, M]) = onCopy(o, (_:Float) - (_:Float))
-  def subI(o: Vector[N])(implicit m: ToInt[N]) = test(o)(_ - _)
+  def subI(o: Vector[N])= inplace(o, (_:Float) - (_:Float))
   def subI(o: Float) = inplace(o, (_:Float) - (_:Float))
 
   def +[M <: ColumnVector[N]](o: Vector[N])(implicit b: Builder[_1, N, M]) = onCopy(o, (_:Float) + (_:Float))

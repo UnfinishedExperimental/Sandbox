@@ -59,10 +59,11 @@ public class ResourceLoading implements GLEventListener {
 
         FPSController vm = new FPSController();
         a.cache.setView(vm.getView());
+
         client.addMouseListener(new InputController(vm, null, a.cache));
         client.addKeyListener(vm);
 
-        a.time.addListener(vm.forCach(a.cache));
+        // a.time.addListener(vm.forCache(a.cache));
     }
 
     @Override

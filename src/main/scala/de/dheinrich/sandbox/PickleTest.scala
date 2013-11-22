@@ -1,11 +1,12 @@
 package de.dheinrich.sandbox
 
-import de.dheinrich.sandbox.matrix.Vector3
+import de.dheinrich.sandbox.matrix.Vector
 import scala.pickling._
-import binary._
+import json._
 
 object	 PickleTest {
   def main(args: Array[String]) {
-    val v = new Vector3(2,3,4)
+    val v = Vector[shapeless.Nat._3](2,3,4).pickle
+    println(v.value)
   }
 }

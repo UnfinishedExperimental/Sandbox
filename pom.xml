@@ -4,11 +4,21 @@
 
     <groupId>de.dheinrich</groupId>
     <artifactId>Sandbox</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0-Snapshot</version>
     <packaging>jar</packaging>
 
     <name>Sandbox</name>
     <url>http://maven.apache.org</url>
+<organization>
+  <name>Das Me</name>
+</organization>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	<javafx.version>2.2</javafx.version>
+	<app.main>de.dheinrich.sandbox.ResourceLoading</app.main>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -42,7 +52,7 @@
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>
+            <plugin>
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>
                 <version>2.15.2</version>
@@ -66,7 +76,7 @@
                 <configuration>
                     <addArgs>-optimise</addArgs>
                 </configuration>
-            </plugin>-->
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -114,8 +124,8 @@
                 <version>2.4</version>
                 <configuration>
                     <archive>
-                        <manifest>
-                            <mainClass>de.dheinrich.sandbox.ResourceLoading</mainClass>
+                        <manifest>						
+                            <mainClass>${app.main}</mainClass>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
@@ -130,22 +140,30 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>install</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
+			    <overWriteReleases>false</overWriteReleases>
+			    <overWriteSnapshots>false</overWriteSnapshots>
+			    <overWriteIfNewer>true</overWriteIfNewer>						
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+<plugin>
+    <groupId>com.zenjava</groupId>
+    <artifactId>javafx-maven-plugin</artifactId>
+    <version>2.0</version>
+    <configuration>
+        <mainClass>${app.main}</mainClass>
+	<verbose>true</verbose>
+    </configuration>
+</plugin>
         </plugins>
     </build>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -223,11 +241,11 @@
         	<version>1.0-beta-1</version>
         	<classifier>all</classifier>
         </dependency>
-		<dependency>
-			<groupId>com.badlogicgames.gdx</groupId>
-			<artifactId>gdx</artifactId>
-			<version>0.9.9-SNAPSHOT</version>
-		</dependency>
+        <dependency>
+	  	<groupId>com.badlogicgames.gdx</groupId>
+		<artifactId>gdx</artifactId>
+		<version>0.9.9-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>de.dheinrich.Sandbox</groupId>
             <artifactId>Macros</artifactId>
@@ -237,6 +255,11 @@
             <groupId>de.dheinrich.Sandbox</groupId>
             <artifactId>Macros2</artifactId>
             <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.rxjava</groupId>
+            <artifactId>rxjava-scala</artifactId>
+            <version>0.14.3</version>
         </dependency>
     </dependencies>
 

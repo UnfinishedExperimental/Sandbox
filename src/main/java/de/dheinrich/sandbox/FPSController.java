@@ -22,9 +22,8 @@ public class FPSController extends KeyAdapter implements ViewModel {
     private static final float SPEED = 120;
     private final ViewMatrix inverse = new ViewMatrix();
     private float x, y;
-    private final Quaternion rotation = new Quaternion();
-    private final Vector3 position = new Vector3();
-    private boolean forward, backward, left, right;
+    public final Quaternion rotation = new Quaternion();
+    public final Vector3 position = new Vector3();
 
     public FPSController() {
         inverse.loadIdentity();
@@ -36,7 +35,7 @@ public class FPSController extends KeyAdapter implements ViewModel {
         return inverse;
     }
 
-    private void resetInverse() {
+    public void resetInverse() {
         inverse.loadIdentity();
         inverse.rotate(rotation);
         inverse.setWorldTranslate(position);
@@ -57,69 +56,6 @@ public class FPSController extends KeyAdapter implements ViewModel {
         rotation.mult(rx);
         
         resetInverse();
-    }
-
-    public DeltaListener forCach(final MatrixCache cache) {
-        return new DeltaListener() {
-            @Override
-            public void update(double timeDelta) {
-                if (left || right || forward || backward) {
-                    float speed = (float) (10 * timeDelta);
-
-                    Vector3 trans = new Vector3(left || right ? conv(left) * speed : 0,
-                                                0,
-                                                forward || backward ? conv(forward) * speed : 0);
-                    
-                    position.add(rotation.getRotationMatrix().fastMult(trans));
-                    resetInverse();
-                    cache.fireChange(MatType.VIEW);
-                }
-            }
-           
-
-            private int conv(boolean b) {
-                return b ? -1 : 1;
-            }
-        };
-    }
-
-    @Override
-    public void keyReleased(KeyEvent ke) {
-        switch (ke.getKeyCode()) {
-            case 'W':
-                forward = false;
-                break;
-            case 'A':
-                left = false;
-                break;
-            case 'S':
-                backward = false;
-                break;
-            case 'D':
-                right = false;
-                break;
-            case 'R':
-                resetView();
-                break;
-        }
-    }
-
-    @Override
-    public void keyPressed(KeyEvent ke) {
-        switch (ke.getKeyCode()) {
-            case 'W':
-                forward = true;
-                break;
-            case 'A':
-                left = true;
-                break;
-            case 'S':
-                backward = true;
-                break;
-            case 'D':
-                right = true;
-                break;
-        }
     }
 
     @Override
