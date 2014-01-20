@@ -5,7 +5,7 @@ import Vector._
 import com.google.caliper.api.BeforeRep
 import scala.reflect.ClassTag
 import scala.util.Random
-import com.badlogic.gdx.math.{ Vector3 => LGXVector3 }
+//import com.badlogic.gdx.math.{ Vector3 => LGXVector3 }
 import shapeless.Nat._
 
 case class Bench[T: ClassTag](data: Seq[T])(f: (T, T) => Float){
@@ -32,14 +32,14 @@ object Bench {
   }
 
   def nextVec3 = Vector[_3](Random.nextFloat, Random.nextFloat, Random.nextFloat)
-  def nextVec3LGX = new LGXVector3(Random.nextFloat, Random.nextFloat, Random.nextFloat)
+  //def nextVec3LGX = new LGXVector3(Random.nextFloat, Random.nextFloat, Random.nextFloat)
   
   
   val count = 1000
   
   
   val myData = Array.tabulate(count)(i => nextVec3)
-  val ldxData = Array.tabulate(count)(i => nextVec3LGX)
+ // val ldxData = Array.tabulate(count)(i => nextVec3LGX)
   val bufData = MappedObject.alloc[Vec](count)
   for(v <- bufData){
     v.x = Random.nextFloat
@@ -51,9 +51,9 @@ object Bench {
   val myCross = Bench(myData)((a,b) => (a cross b).x)
   val myPlus = Bench(myData)((a,b) => {(a addI b); a.x})
   
-  val ldxDot = Bench(ldxData)( _ dot _)
-  val ldxCross = Bench(ldxData)((a,b) => (a crs b).x)
-  val ldxPlus = Bench(ldxData)((a,b) => (a add b).x)
+  //val ldxDot = Bench(ldxData)( _ dot _)
+  //val ldxCross = Bench(ldxData)((a,b) => (a crs b).x)
+  //val ldxPlus = Bench(ldxData)((a,b) => (a add b).x)
   
   val bufDot = Bench(bufData)( _ dot _)
   val bufCross = Bench(bufData)((a,b) => (a cross b).x)

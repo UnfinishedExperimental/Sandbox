@@ -27,7 +27,7 @@ public class FPSController extends KeyAdapter implements ViewModel {
 
     public FPSController() {
         inverse.loadIdentity();
-        rotation.setAxisAngle(Vector3.POS_X, 0);
+        //rotation.setAxisAngle(Vector3.POS_X, 0);
     }
 
     @Override
@@ -48,10 +48,10 @@ public class FPSController extends KeyAdapter implements ViewModel {
         x += dy * SPEED;
         y += dx * SPEED;
         
-        rotation.setAxisAngle(Vector3.POS_Y, y);
+        //rotation.setAxisAngle(Vector3.POS_Y, y);
         
         Quaternion rx = new Quaternion();
-        rx.setAxisAngle(Vector3.POS_X, x);
+        //rx.setAxisAngle(Vector3.POS_X, x);
         
         rotation.mult(rx);
         

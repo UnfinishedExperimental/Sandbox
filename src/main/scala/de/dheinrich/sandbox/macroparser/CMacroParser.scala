@@ -3,7 +3,7 @@
  * and open the template in the editor.
  */
 
-package de.dheinrich.sandbox
+package de.dheinrich.sandbox.macroparser
 
 import scala.util.parsing.combinator._
 
@@ -63,6 +63,7 @@ object CMacroParser extends JavaTokenParsers with ImplicitConversions {
         #import blub.txt
       #elif CONST > 3
         #define BOO
+        #define BOO2(x,y) (x*x + 2*y)
       #else
         #define HUU
         do that

@@ -10,6 +10,7 @@ import java.util.concurrent.*;
 
 import darwin.geometrie.io.*;
 import darwin.geometrie.io.ctm.*;
+import darwin.geometrie.io.ctm.CtmModelWriter;
 import darwin.geometrie.io.obj.ObjModelReader;
 import darwin.geometrie.unpacked.Model;
 import darwin.jopenctm.compression.*;
